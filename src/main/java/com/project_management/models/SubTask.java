@@ -24,6 +24,10 @@ public class SubTask {
     @Column(name = "create_user_id", nullable = false)
     private Long createUserId;
 
+    @ManyToOne
+    @JoinColumn(name = "assigned_user_id")
+    private User assignedUser;
+
     @Enumerated(EnumType.STRING)
     private TaskStatus status;
 
