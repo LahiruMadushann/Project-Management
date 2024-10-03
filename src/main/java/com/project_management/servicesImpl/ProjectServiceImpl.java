@@ -46,8 +46,24 @@ public class ProjectServiceImpl implements ProjectService {
     public ProjectDTO updateProject(Long id, ProjectDTO projectDTO) {
         Project existingProject = projectRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
-        BeanUtils.copyProperties(projectDTO, existingProject);
+        if (projectDTO.getName() != null) {
+            existingProject.setName(projectDTO.getName());
+        }
+        if (projectDTO.getSummary() != null) {
+            existingProject.setSummary(projectDTO.getSummary());
+        }
+        if (projectDTO.getDomain() != null) {
+            existingProject.setDomain(projectDTO.getDomain());
+        }
+        if (projectDTO.getBudget() != null) {
+            existingProject.setBudget(projectDTO.getBudget());
+        }
+        if (projectDTO.getDeadline() != null) {
+            existingProject.setDeadline(projectDTO.getDeadline());
+        }
+
         existingProject.setUpdatedAt(LocalDateTime.now());
+
         Project updatedProject = projectRepository.save(existingProject);
         return convertToDTO(updatedProject);
     }
