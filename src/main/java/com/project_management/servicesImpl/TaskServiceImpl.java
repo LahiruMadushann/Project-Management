@@ -38,8 +38,14 @@ public class TaskServiceImpl implements TaskService {
 
         Task task = new Task();
         BeanUtils.copyProperties(taskDTO, task, "id", "releaseVersion");
+        if (taskDTO.getAssignedUserId() != null) {
+            User user = userRepository.findById(taskDTO.getAssignedUserId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            task.setAssignedUser(user);
+        }
         task.setReleaseVersion(releaseVersion);
         task.setCreatedAt(LocalDateTime.now());
+        task.setUpdatedAt(LocalDateTime.now());
 
         Task savedTask = taskRepository.save(task);
 
@@ -70,7 +76,7 @@ public class TaskServiceImpl implements TaskService {
         }
 
         if (taskDTO.getStatus() != null) {
-            existingTask.setStatus(TaskStatus.valueOf(taskDTO.getStatus()));
+            existingTask.setStatus(taskDTO.getStatus());
         }
 
         if (taskDTO.getTags() != null) {
@@ -136,6 +142,9 @@ public class TaskServiceImpl implements TaskService {
         TaskDTO taskDTO = new TaskDTO();
         BeanUtils.copyProperties(task, taskDTO);
         taskDTO.setReleaseVersionId(task.getReleaseVersion().getId());
+        if (task.getAssignedUser() != null && task.getAssignedUser().getId() != null){
+            taskDTO.setAssignedUserId(task.getAssignedUser().getId());
+        }
         return taskDTO;
     }
 }

@@ -37,10 +37,15 @@ public class SubTaskServiceImpl implements SubTaskService {
 
         SubTask subTask = new SubTask();
         BeanUtils.copyProperties(subTaskDTO, subTask, "id", "task");
+        if (subTaskDTO.getAssignedUserId() != null) {
+            User user = userRepository.findById(subTaskDTO.getAssignedUserId())
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            subTask.setAssignedUser(user);
+        }
 
         subTask.setTask(parentTask);
         subTask.setCreatedAt(LocalDateTime.now());
-
+        subTask.setUpdatedAt(LocalDateTime.now());
         SubTask savedSubTask = subTaskRepository.save(subTask);
         return convertToDTO(savedSubTask);
     }
@@ -69,7 +74,7 @@ public class SubTaskServiceImpl implements SubTaskService {
         }
 
         if (subTaskDTO.getStatus() != null) {
-            existingSubTask.setStatus(TaskStatus.valueOf(subTaskDTO.getStatus()));
+            existingSubTask.setStatus(subTaskDTO.getStatus());
         }
 
         if (subTaskDTO.getTags() != null) {
@@ -134,9 +139,12 @@ public class SubTaskServiceImpl implements SubTaskService {
     }
 
     private SubTaskDTO convertToDTO(SubTask subTask) {
-        SubTaskDTO dto = new SubTaskDTO();
-        BeanUtils.copyProperties(subTask, dto);
-        dto.setTaskId(subTask.getTask().getId());
-        return dto;
+        SubTaskDTO subTaskDto = new SubTaskDTO();
+        BeanUtils.copyProperties(subTask, subTaskDto);
+        subTaskDto.setTaskId(subTask.getTask().getId());
+        if (subTask.getAssignedUser() != null && subTask.getAssignedUser().getId() != null){
+            subTaskDto.setAssignedUserId(subTask.getAssignedUser().getId());
+        }
+        return subTaskDto;
     }
 }

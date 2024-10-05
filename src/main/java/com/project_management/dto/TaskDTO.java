@@ -1,5 +1,6 @@
 package com.project_management.dto;
 
+import com.project_management.models.enums.TaskStatus;
 import lombok.Data;
 import java.time.LocalDate;
 
@@ -10,7 +11,7 @@ public class TaskDTO {
     private String name;
     private Long createUserId;
     private Long assignedUserId;
-    private String status;
+    private TaskStatus status;
     private String tags;
     private LocalDate assignedDate;
     private LocalDate startDate;
