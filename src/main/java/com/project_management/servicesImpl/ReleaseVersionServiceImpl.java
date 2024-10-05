@@ -57,7 +57,9 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
         ReleaseVersion existingVersion = releaseVersionRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Release Version not found"));
 
-        existingVersion.setVersionName(releaseVersionDTO.getVersionName());
+        if (releaseVersionDTO.getVersionName() != null) {
+            existingVersion.setVersionName(releaseVersionDTO.getVersionName());
+        }
 
         if (releaseVersionDTO.getProjectId() != null &&
                 !releaseVersionDTO.getProjectId().equals(existingVersion.getProject().getId())) {
@@ -65,6 +67,7 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
                     .orElseThrow(() -> new EntityNotFoundException("Project not found"));
             existingVersion.setProject(newProject);
         }
+
 
         existingVersion.setUpdatedAt(LocalDateTime.now());
         ReleaseVersion updatedVersion = releaseVersionRepository.save(existingVersion);

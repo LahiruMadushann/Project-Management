@@ -4,6 +4,7 @@ import com.project_management.dto.SubTaskDTO;
 import com.project_management.models.SubTask;
 import com.project_management.models.Task;
 import com.project_management.models.User;
+import com.project_management.models.enums.TaskStatus;
 import com.project_management.repositories.SubTaskRepository;
 import com.project_management.repositories.TaskRepository;
 import com.project_management.repositories.UserRepository;
@@ -63,23 +64,47 @@ public class SubTaskServiceImpl implements SubTaskService {
         SubTask existingSubTask = subTaskRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("SubTask not found"));
 
-        Task existingTask = existingSubTask.getTask();
-        Long existingCreateUserId = existingSubTask.getCreateUserId();
+        if (subTaskDTO.getName() != null) {
+            existingSubTask.setName(subTaskDTO.getName());
+        }
 
-        String[] ignoredProperties = {"id", "task", "createUserId", "createdAt"};
+        if (subTaskDTO.getStatus() != null) {
+            existingSubTask.setStatus(TaskStatus.valueOf(subTaskDTO.getStatus()));
+        }
 
-        BeanUtils.copyProperties(subTaskDTO, existingSubTask, ignoredProperties);
+        if (subTaskDTO.getTags() != null) {
+            existingSubTask.setTags(subTaskDTO.getTags());
+        }
+
+        if (subTaskDTO.getAssignedDate() != null) {
+            existingSubTask.setAssignedDate(subTaskDTO.getAssignedDate());
+        }
+
+        if (subTaskDTO.getStartDate() != null) {
+            existingSubTask.setStartDate(subTaskDTO.getStartDate());
+        }
+
+        if (subTaskDTO.getDeadline() != null) {
+            existingSubTask.setDeadline(subTaskDTO.getDeadline());
+        }
+
+        if (subTaskDTO.getCompletedDate() != null) {
+            existingSubTask.setCompletedDate(subTaskDTO.getCompletedDate());
+        }
 
         if (subTaskDTO.getTaskId() != null &&
-                !subTaskDTO.getTaskId().equals(existingTask.getId())) {
+                !subTaskDTO.getTaskId().equals(existingSubTask.getTask().getId())) {
             Task newTask = taskRepository.findById(subTaskDTO.getTaskId())
                     .orElseThrow(() -> new RuntimeException("Task not found"));
             existingSubTask.setTask(newTask);
-        } else {
-            existingSubTask.setTask(existingTask);
         }
 
-        existingSubTask.setCreateUserId(existingCreateUserId);
+        if (subTaskDTO.getAssignedUserId() != null &&
+                (existingSubTask.getAssignedUser() == null || !subTaskDTO.getAssignedUserId().equals(existingSubTask.getAssignedUser().getId()))) {
+            User newAssignedUser = userRepository.findById(subTaskDTO.getAssignedUserId())
+                    .orElseThrow(() -> new RuntimeException("Assigned User not found"));
+            existingSubTask.setAssignedUser(newAssignedUser);
+        }
 
         existingSubTask.setUpdatedAt(LocalDateTime.now());
 

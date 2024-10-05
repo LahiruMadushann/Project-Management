@@ -5,6 +5,7 @@ import com.project_management.models.Project;
 import com.project_management.models.ReleaseVersion;
 import com.project_management.models.Task;
 import com.project_management.models.User;
+import com.project_management.models.enums.TaskStatus;
 import com.project_management.repositories.ReleaseVersionRepository;
 import com.project_management.repositories.TaskRepository;
 import com.project_management.repositories.UserRepository;
@@ -64,23 +65,47 @@ public class TaskServiceImpl implements TaskService {
         Task existingTask = taskRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
 
-        ReleaseVersion existingVersion = existingTask.getReleaseVersion();
-        Long existingCreateUserId = existingTask.getCreateUserId();
+        if (taskDTO.getName() != null) {
+            existingTask.setName(taskDTO.getName());
+        }
 
-        String[] ignoredProperties = {"id", "releaseVersion", "createUserId", "createdAt"};
+        if (taskDTO.getStatus() != null) {
+            existingTask.setStatus(TaskStatus.valueOf(taskDTO.getStatus()));
+        }
 
-        BeanUtils.copyProperties(taskDTO, existingTask, ignoredProperties);
+        if (taskDTO.getTags() != null) {
+            existingTask.setTags(taskDTO.getTags());
+        }
+
+        if (taskDTO.getAssignedDate() != null) {
+            existingTask.setAssignedDate(taskDTO.getAssignedDate());
+        }
+
+        if (taskDTO.getStartDate() != null) {
+            existingTask.setStartDate(taskDTO.getStartDate());
+        }
+
+        if (taskDTO.getDeadline() != null) {
+            existingTask.setDeadline(taskDTO.getDeadline());
+        }
+
+        if (taskDTO.getCompletedDate() != null) {
+            existingTask.setCompletedDate(taskDTO.getCompletedDate());
+        }
 
         if (taskDTO.getReleaseVersionId() != null &&
-                !taskDTO.getReleaseVersionId().equals(existingVersion.getId())) {
+                !taskDTO.getReleaseVersionId().equals(existingTask.getReleaseVersion().getId())) {
             ReleaseVersion newVersion = releaseVersionRepository.findById(taskDTO.getReleaseVersionId())
                     .orElseThrow(() -> new RuntimeException("Release Version not found"));
             existingTask.setReleaseVersion(newVersion);
-        } else {
-            existingTask.setReleaseVersion(existingVersion);
         }
 
-        existingTask.setCreateUserId(existingCreateUserId);
+        if (taskDTO.getAssignedUserId() != null &&
+                (existingTask.getAssignedUser() == null || !taskDTO.getAssignedUserId().equals(existingTask.getAssignedUser().getId()))) {
+            User newAssignedUser = userRepository.findById(taskDTO.getAssignedUserId())
+                    .orElseThrow(() -> new RuntimeException("Assigned User not found"));
+            existingTask.setAssignedUser(newAssignedUser);
+        }
 
         existingTask.setUpdatedAt(LocalDateTime.now());
 
