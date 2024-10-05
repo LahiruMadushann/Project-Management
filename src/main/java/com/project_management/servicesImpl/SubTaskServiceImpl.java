@@ -5,6 +5,7 @@ import com.project_management.models.SubTask;
 import com.project_management.models.Task;
 import com.project_management.models.User;
 import com.project_management.repositories.SubTaskRepository;
+import com.project_management.repositories.TaskRepository;
 import com.project_management.repositories.UserRepository;
 import com.project_management.services.SubTaskService;
 import org.springframework.beans.BeanUtils;
@@ -25,12 +26,20 @@ public class SubTaskServiceImpl implements SubTaskService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private TaskRepository taskRepository;
+
     @Override
     public SubTaskDTO createSubTask(SubTaskDTO subTaskDTO) {
+        Task parentTask = taskRepository.findById(subTaskDTO.getTaskId())
+                .orElseThrow(() -> new RuntimeException("Parent Task not found"));
+
         SubTask subTask = new SubTask();
-        BeanUtils.copyProperties(subTaskDTO, subTask);
+        BeanUtils.copyProperties(subTaskDTO, subTask, "id", "task");
+
+        subTask.setTask(parentTask);
         subTask.setCreatedAt(LocalDateTime.now());
-        subTask.setUpdatedAt(LocalDateTime.now());
+
         SubTask savedSubTask = subTaskRepository.save(subTask);
         return convertToDTO(savedSubTask);
     }
@@ -53,8 +62,27 @@ public class SubTaskServiceImpl implements SubTaskService {
     public SubTaskDTO updateSubTask(Long id, SubTaskDTO subTaskDTO) {
         SubTask existingSubTask = subTaskRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("SubTask not found"));
-        BeanUtils.copyProperties(subTaskDTO, existingSubTask);
+
+        Task existingTask = existingSubTask.getTask();
+        Long existingCreateUserId = existingSubTask.getCreateUserId();
+
+        String[] ignoredProperties = {"id", "task", "createUserId", "createdAt"};
+
+        BeanUtils.copyProperties(subTaskDTO, existingSubTask, ignoredProperties);
+
+        if (subTaskDTO.getTaskId() != null &&
+                !subTaskDTO.getTaskId().equals(existingTask.getId())) {
+            Task newTask = taskRepository.findById(subTaskDTO.getTaskId())
+                    .orElseThrow(() -> new RuntimeException("Task not found"));
+            existingSubTask.setTask(newTask);
+        } else {
+            existingSubTask.setTask(existingTask);
+        }
+
+        existingSubTask.setCreateUserId(existingCreateUserId);
+
         existingSubTask.setUpdatedAt(LocalDateTime.now());
+
         SubTask updatedSubTask = subTaskRepository.save(existingSubTask);
         return convertToDTO(updatedSubTask);
     }
@@ -81,9 +109,9 @@ public class SubTaskServiceImpl implements SubTaskService {
     }
 
     private SubTaskDTO convertToDTO(SubTask subTask) {
-        SubTaskDTO subTaskDTO = new SubTaskDTO();
-        BeanUtils.copyProperties(subTask, subTaskDTO);
-        subTaskDTO.setAssignedUserId(subTask.getAssignedUser() != null ? subTask.getAssignedUser().getId() : null);
-        return subTaskDTO;
+        SubTaskDTO dto = new SubTaskDTO();
+        BeanUtils.copyProperties(subTask, dto);
+        dto.setTaskId(subTask.getTask().getId());
+        return dto;
     }
 }
