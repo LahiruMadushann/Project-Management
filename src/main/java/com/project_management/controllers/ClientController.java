@@ -1,7 +1,11 @@
 package com.project_management.controllers;
 
 import com.project_management.dto.ClientDTO;
+import com.project_management.dto.ClientSignUpResponse;
+import com.project_management.dto.SignupRequestDTO;
+import com.project_management.dto.SignupResponseDTO;
 import com.project_management.services.ClientService;
+import com.project_management.services.SignupService;
 import com.project_management.servicesImpl.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,10 +23,19 @@ public class ClientController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private SignupService signupService;
+
     @PostMapping
     public ResponseEntity<ClientDTO> createClient(@RequestBody ClientDTO clientDTO) {
         userService.adminPermission();
         return ResponseEntity.ok(clientService.createClient(clientDTO));
+    }
+
+    @PostMapping("/signup")
+    public ResponseEntity<ClientSignUpResponse> signup(@RequestBody ClientDTO clientDTO) {
+        ClientSignUpResponse signupResponse = signupService.signup(clientDTO);
+        return ResponseEntity.ok(signupResponse);
     }
 
     @PutMapping("/{clientId}")

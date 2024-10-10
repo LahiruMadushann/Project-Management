@@ -7,5 +7,6 @@ public class EmployeeDTO {
     private String employeeId;
     private String employeeName;
     private String seniority;
+    private String roleName;
     private String createdByUsername;
 }

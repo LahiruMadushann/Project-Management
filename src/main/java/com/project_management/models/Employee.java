@@ -19,7 +19,10 @@ public class Employee {
     @JoinColumn(name = "user_id", nullable = false)
     private User createdBy;
 
-    @Column(nullable = false)
+    @Column(name = "role_name",nullable = false)
+    private String roleName;
+
+    @Column(name = "seniority",nullable = false)
     private String seniority;
 }
 
