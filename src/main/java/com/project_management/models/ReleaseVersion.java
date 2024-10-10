@@ -29,6 +29,9 @@ public class ReleaseVersion {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "version_description")
+    private String versionDescription;
+
     @OneToMany(mappedBy = "releaseVersion", cascade = CascadeType.ALL)
     private List<Task> tasks;
 }

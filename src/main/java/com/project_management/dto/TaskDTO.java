@@ -3,6 +3,7 @@ package com.project_management.dto;
 import com.project_management.models.enums.TaskStatus;
 import lombok.Data;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 public class TaskDTO {
@@ -17,4 +18,5 @@ public class TaskDTO {
     private LocalDate startDate;
     private LocalDate deadline;
     private LocalDate completedDate;
+    private List<SubTaskDTO> subTaskList;
 }

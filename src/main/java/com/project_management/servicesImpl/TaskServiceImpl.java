@@ -1,10 +1,8 @@
 package com.project_management.servicesImpl;
 
+import com.project_management.dto.SubTaskDTO;
 import com.project_management.dto.TaskDTO;
-import com.project_management.models.Project;
-import com.project_management.models.ReleaseVersion;
-import com.project_management.models.Task;
-import com.project_management.models.User;
+import com.project_management.models.*;
 import com.project_management.models.enums.TaskStatus;
 import com.project_management.repositories.ReleaseVersionRepository;
 import com.project_management.repositories.TaskRepository;
@@ -145,6 +143,22 @@ public class TaskServiceImpl implements TaskService {
         if (task.getAssignedUser() != null && task.getAssignedUser().getId() != null){
             taskDTO.setAssignedUserId(task.getAssignedUser().getId());
         }
+        if (task.getSubTasks() != null && !task.getSubTasks().isEmpty()) {
+            List<SubTaskDTO> subTaskDTOs = task.getSubTasks().stream()
+                    .map(this::convertSubTaskToDTO)
+                    .collect(Collectors.toList());
+            taskDTO.setSubTaskList(subTaskDTOs);
+        }
         return taskDTO;
+    }
+
+    private SubTaskDTO convertSubTaskToDTO(SubTask subTask) {
+        SubTaskDTO subTaskDTO = new SubTaskDTO();
+        BeanUtils.copyProperties(subTask, subTaskDTO);
+        subTaskDTO.setTaskId(subTask.getTask().getId());
+        if (subTask.getAssignedUser() != null) {
+            subTaskDTO.setAssignedUserId(subTask.getAssignedUser().getId());
+        }
+        return subTaskDTO;
     }
 }

@@ -1,8 +1,12 @@
 package com.project_management.servicesImpl;
 
 import com.project_management.dto.ReleaseVersionDTO;
+import com.project_management.dto.SubTaskDTO;
+import com.project_management.dto.TaskDTO;
 import com.project_management.models.Project;
 import com.project_management.models.ReleaseVersion;
+import com.project_management.models.SubTask;
+import com.project_management.models.Task;
 import com.project_management.repositories.ProjectRepository;
 import com.project_management.repositories.ReleaseVersionRepository;
 import com.project_management.services.ReleaseVersionService;
@@ -32,6 +36,7 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
         releaseVersion.setVersionName(releaseVersionDTO.getVersionName());
         releaseVersion.setProject(project);
         releaseVersion.setCreateUserId(releaseVersionDTO.getCreateUserId());
+        releaseVersion.setVersionDescription(releaseVersionDTO.getVersionDescription());
         releaseVersion.setCreatedAt(LocalDateTime.now());
 
         ReleaseVersion savedVersion = releaseVersionRepository.save(releaseVersion);
@@ -86,7 +91,46 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
         dto.setId(releaseVersion.getId());
         dto.setProjectId(releaseVersion.getProject().getId());
         dto.setVersionName(releaseVersion.getVersionName());
+        dto.setVersionDescription(releaseVersion.getVersionDescription());
         dto.setCreateUserId(releaseVersion.getCreateUserId());
+
+        if (releaseVersion.getTasks() != null && !releaseVersion.getTasks().isEmpty()) {
+            List<TaskDTO> taskDTOs = releaseVersion.getTasks().stream()
+                    .map(this::convertTaskToDTO)
+                    .collect(Collectors.toList());
+            dto.setTasks(taskDTOs);
+        }
         return dto;
+    }
+
+    private TaskDTO convertTaskToDTO(Task task) {
+        TaskDTO taskDTO = new TaskDTO();
+        BeanUtils.copyProperties(task, taskDTO);
+        taskDTO.setReleaseVersionId(task.getReleaseVersion().getId());
+
+        if (task.getAssignedUser() != null) {
+            taskDTO.setAssignedUserId(task.getAssignedUser().getId());
+        }
+
+        if (task.getSubTasks() != null && !task.getSubTasks().isEmpty()) {
+            List<SubTaskDTO> subTaskDTOs = task.getSubTasks().stream()
+                    .map(this::convertSubTaskToDTO)
+                    .collect(Collectors.toList());
+            taskDTO.setSubTaskList(subTaskDTOs);
+        }
+
+        return taskDTO;
+    }
+
+    private SubTaskDTO convertSubTaskToDTO(SubTask subTask) {
+        SubTaskDTO subTaskDTO = new SubTaskDTO();
+        BeanUtils.copyProperties(subTask, subTaskDTO);
+        subTaskDTO.setTaskId(subTask.getTask().getId());
+
+        if (subTask.getAssignedUser() != null) {
+            subTaskDTO.setAssignedUserId(subTask.getAssignedUser().getId());
+        }
+
+        return subTaskDTO;
     }
 }
