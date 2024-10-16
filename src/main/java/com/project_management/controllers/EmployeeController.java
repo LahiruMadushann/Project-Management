@@ -20,9 +20,9 @@ public class EmployeeController {
     private UserService userService;
 
     @PostMapping
-    public ResponseEntity<EmployeeDTO> createEmployee(@RequestBody EmployeeDTO employeeDTO) {
+    public ResponseEntity<EmployeeDTO> createEmployee(@RequestBody EmployeeDTO employeeDTO, @RequestParam Long userId) {
         userService.managerPermission();
-        return ResponseEntity.ok(employeeService.createEmployee(employeeDTO));
+        return ResponseEntity.ok(employeeService.createEmployee(employeeDTO, userId));
     }
 
     @PutMapping("/{employeeId}")

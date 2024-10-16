@@ -39,7 +39,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // Generate JWT token
-        String token = jwtTokenProvider.createToken(user.getUsername(), user.getRole().getName());
+        String token = jwtTokenProvider.createToken(user.getUsername(), user.getRole().getName(),user.getId());
 
         // Fetch role-based accesses
         List<String> permissions = getPermissionsByUsername(user.getUsername());

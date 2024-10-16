@@ -32,9 +32,10 @@ public class JwtTokenProvider {
         return Base64.getEncoder().encodeToString(secretKey.getBytes());
     }
 
-    public String createToken(String username, String role) {
+    public String createToken(String username, String role, Long userId) {
         Claims claims = Jwts.claims().setSubject(username);
         claims.put("role", role);
+        claims.put("userId", userId);
 
         Date now = new Date();
         Date validity = new Date(now.getTime() + validityInMilliseconds);
@@ -54,6 +55,9 @@ public class JwtTokenProvider {
 
     public String getUsername(String token) {
         return Jwts.parser().setSigningKey(getEncodedSecretKey()).parseClaimsJws(token).getBody().getSubject();
+    }
+    public Long getUserId(String token) {
+        return Long.valueOf(Jwts.parser().setSigningKey(getEncodedSecretKey()).parseClaimsJws(token).getBody().get("userId").toString());
     }
 
     public String resolveToken(HttpServletRequest req) {

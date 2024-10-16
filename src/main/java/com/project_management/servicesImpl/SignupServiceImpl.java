@@ -52,8 +52,9 @@ public class SignupServiceImpl implements SignupService {
 
         // Save user
         userRepository.save(newUser);
+        Integer userId = userRepository.findIdByUsername(signupRequestDTO.getUsername());
 
-        return new SignupResponseDTO(newUser.getUsername(), role.getName(), "User registered successfully");
+        return new SignupResponseDTO(userId,newUser.getUsername(), role.getName(), "User registered successfully");
     }
 
     @Override
