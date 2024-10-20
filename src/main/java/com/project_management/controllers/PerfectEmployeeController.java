@@ -2,10 +2,13 @@ package com.project_management.controllers;
 
 import com.project_management.dto.PerfectEmployeeDTO;
 import com.project_management.models.PerfectRole;
+import com.project_management.security.jwt.JwtTokenProvider;
 import com.project_management.services.PerfectEmployeeService;
 import com.project_management.services.PerfectRoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,9 +24,14 @@ public class PerfectEmployeeController {
     @Autowired
     private PerfectRoleService perfectRoleService;
 
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
     @PostMapping
     public ResponseEntity<PerfectEmployeeDTO> createPerfectEmployee(@RequestBody PerfectEmployeeDTO perfectEmployeeDTO) {
-        return ResponseEntity.ok(perfectEmployeeService.savePerfectEmployee(perfectEmployeeDTO));
+        String token = getTokenFromRequest();
+        Long userId = jwtTokenProvider.getUserId(token);
+        return ResponseEntity.ok(perfectEmployeeService.savePerfectEmployee(perfectEmployeeDTO, userId));
     }
 
     @PutMapping("/{employeeId}")
@@ -49,6 +57,14 @@ public class PerfectEmployeeController {
 
     @GetMapping("/roles")
     public ResponseEntity<List<String>> getAllRoles() {
-        return ResponseEntity.ok(perfectRoleService.getAllRoles().stream().map(PerfectRole::getRoleName).collect(Collectors.toList()));
+        return ResponseEntity.ok(perfectRoleService.getAllRoles().stream().map(PerfectRole::getRoleName).toList());
+    }
+
+    private String getTokenFromRequest() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getCredentials() instanceof String) {
+            return (String) authentication.getCredentials();
+        }
+        throw new RuntimeException("No authentication token found");
     }
 }

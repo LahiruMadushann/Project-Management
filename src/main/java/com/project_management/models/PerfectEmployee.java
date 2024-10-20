@@ -13,9 +13,6 @@ public class PerfectEmployee {
     @Column(name = "p_employee_id")
     private String employeeId;
 
-    @Column(name = "p_employee_name", nullable = false)
-    private String employeeName;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "p_created_by_user_id", nullable = false)
     private User createdBy;

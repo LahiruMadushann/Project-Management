@@ -13,7 +13,7 @@ public class PerfectEmployeeExperience {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "p_employee_id", nullable = false)
-    private Employee employee;
+    private PerfectEmployee employee;
 
     @Column(name = "p_experience_name", nullable = false)
     private String experienceName;

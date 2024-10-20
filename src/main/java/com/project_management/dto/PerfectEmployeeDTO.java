@@ -12,16 +12,9 @@ import java.util.List;
 @Data
 public class PerfectEmployeeDTO {
     private String employeeId;
-
-    private String employeeName;
-
-    private User createdBy;
-
     private String roleName;
-
-    private List<PerfectEmployeeSkill> skills;
-
-    private List<PerfectEmployeeExperience> experiences;
-
-    private List<PerfectEmployeeEducation> educations;
+    private Long createdByUserId;
+    private List<PerfectEmployeeSkillDTO> skills;
+    private List<PerfectEmployeeExperienceDTO> experiences;
+    private List<PerfectEmployeeEducationDTO> educations;
 }
