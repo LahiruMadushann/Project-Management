@@ -1,5 +1,6 @@
 package com.project_management.servicesImpl;
 
+import com.project_management.dto.UserResponseDTO;
 import com.project_management.models.RoleAccess;
 import com.project_management.models.User;
 import com.project_management.repositories.RoleAccessRepository;
@@ -16,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.project_management.models.enums.Permissions.*;
@@ -94,5 +96,31 @@ public class UserService implements UserDetailsService {
 
     public boolean passwordMatches(String rawPassword, String encodedPassword) {
         return passwordEncoder.matches(rawPassword, encodedPassword);
+    }
+
+    public List<UserResponseDTO> findAllUsers() {
+        List<User> users = userRepository.findAll();
+        return users.stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    public UserResponseDTO findUserById(Long id) {
+        Optional<User> userOpt = userRepository.findById(id);
+        return userOpt.map(this::convertToDTO).orElse(null);
+    }
+
+    private UserResponseDTO convertToDTO(User user) {
+        UserResponseDTO dto = new UserResponseDTO();
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setEmail(user.getEmail());
+        dto.setRoleName(user.getRole().getName());
+
+        List<String> permissions = roleAccessRepository.findByRoleId(user.getRole().getId())
+                .stream()
+                .map(RoleAccess::getPermissionName)
+                .collect(Collectors.toList());
+        dto.setPermissions(permissions);
+
+        return dto;
     }
 }
