@@ -46,6 +46,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setRoleName(employeeDTO.getRoleName());
         employee.setCreatedBy(currentUser);
         employee.setUser(associatedUser);;
+        employee.setMaximumAssessedCount(employeeDTO.getMaximumAssessedCount());
 
         // Generate employee ID
         String employeeId = generateUniqueEmployeeId(employeeDTO.getEmployeeName());
@@ -75,6 +76,11 @@ public class EmployeeServiceImpl implements EmployeeService {
             employee.setRoleName(employeeDTO.getRoleName());
         }
 
+        if (employeeDTO.getMaximumAssessedCount() != null) {
+            employee.setMaximumAssessedCount(employeeDTO.getMaximumAssessedCount());
+        }
+
+
         if (employeeDTO.getSkills() != null) {
             updateSkills(employee, employeeDTO.getSkills());
         }
@@ -86,6 +92,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (employeeDTO.getEducations() != null) {
             updateEducations(employee, employeeDTO.getEducations());
         }
+
 
 
 
@@ -206,6 +213,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         dto.setRoleName(employee.getRoleName());
         dto.setCreatedByUsername(employee.getCreatedBy().getUsername());
         dto.setUserId(employee.getUser().getId());
+        dto.setMaximumAssessedCount(employee.getMaximumAssessedCount());
 
         dto.setSkills(employee.getSkills().stream().map(this::convertToSkillDTO).collect(Collectors.toList()));
         dto.setExperiences(employee.getExperiences().stream().map(this::convertToExperienceDTO).collect(Collectors.toList()));
