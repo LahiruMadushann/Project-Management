@@ -39,5 +39,8 @@ public class Employee {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "associated_user_id")
     private User user;
+
+    @Column(name = "maximum_assessed_count", nullable = false)
+    private Integer maximumAssessedCount;
 }
 

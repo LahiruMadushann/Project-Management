@@ -15,4 +15,5 @@ public class EmployeeDTO {
     private List<EmployeeExperienceDTO> experiences;
     private List<EmployeeEducationDTO> educations;
     private Long userId;
+    private Integer maximumAssessedCount;
 }
