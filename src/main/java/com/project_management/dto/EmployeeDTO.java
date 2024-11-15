@@ -16,4 +16,5 @@ public class EmployeeDTO {
     private List<EmployeeEducationDTO> educations;
     private Long userId;
     private Integer maximumAssessedCount;
+    private Integer difficultyLevel;
 }

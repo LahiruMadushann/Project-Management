@@ -47,6 +47,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setCreatedBy(currentUser);
         employee.setUser(associatedUser);;
         employee.setMaximumAssessedCount(employeeDTO.getMaximumAssessedCount());
+        employee.setDifficultyLevel(employeeDTO.getDifficultyLevel());
 
         // Generate employee ID
         String employeeId = generateUniqueEmployeeId(employeeDTO.getEmployeeName());
@@ -214,6 +215,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         dto.setCreatedByUsername(employee.getCreatedBy().getUsername());
         dto.setUserId(employee.getUser().getId());
         dto.setMaximumAssessedCount(employee.getMaximumAssessedCount());
+        dto.setDifficultyLevel(employee.getDifficultyLevel());
 
         dto.setSkills(employee.getSkills().stream().map(this::convertToSkillDTO).collect(Collectors.toList()));
         dto.setExperiences(employee.getExperiences().stream().map(this::convertToExperienceDTO).collect(Collectors.toList()));

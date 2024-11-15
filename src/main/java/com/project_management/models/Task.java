@@ -30,6 +30,7 @@ public class Task {
     private User assignedUser;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 250)
     private TaskStatus status;
 
     private String tags;
@@ -50,6 +51,9 @@ public class Task {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "difficulty_level")
+    private Integer difficultyLevel;
 
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL)
     private List<SubTask> subTasks;

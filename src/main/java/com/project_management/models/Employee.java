@@ -42,5 +42,8 @@ public class Employee {
 
     @Column(name = "maximum_assessed_count", nullable = false)
     private Integer maximumAssessedCount;
+
+    @Column(name = "difficulty_level")
+    private Integer difficultyLevel;
 }
 

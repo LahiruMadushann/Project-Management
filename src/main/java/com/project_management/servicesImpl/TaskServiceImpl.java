@@ -1,9 +1,9 @@
 package com.project_management.servicesImpl;
 
-import com.project_management.dto.SubTaskDTO;
-import com.project_management.dto.TaskDTO;
+import com.project_management.dto.*;
 import com.project_management.models.*;
 import com.project_management.models.enums.TaskStatus;
+import com.project_management.repositories.EmployeeRepository;
 import com.project_management.repositories.ReleaseVersionRepository;
 import com.project_management.repositories.TaskRepository;
 import com.project_management.repositories.UserRepository;
@@ -11,9 +11,11 @@ import com.project_management.services.TaskService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,24 +31,56 @@ public class TaskServiceImpl implements TaskService {
     @Autowired
     private ReleaseVersionRepository releaseVersionRepository;
 
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
     @Override
     public TaskDTO createTask(TaskDTO taskDTO) {
         ReleaseVersion releaseVersion = releaseVersionRepository.findById(taskDTO.getReleaseVersionId())
                 .orElseThrow(() -> new RuntimeException("Release Version not found"));
 
         Task task = new Task();
-        BeanUtils.copyProperties(taskDTO, task, "id", "releaseVersion");
-        if (taskDTO.getAssignedUserId() != null) {
-            User user = userRepository.findById(taskDTO.getAssignedUserId())
-                    .orElseThrow(() -> new RuntimeException("User not found"));
-            task.setAssignedUser(user);
+        BeanUtils.copyProperties(taskDTO, task, "id", "releaseVersion", "assignedUser");
+
+        // Find suitable employee based on difficulty level
+        if (taskDTO.getDifficultyLevel() != null) {
+            Long projectId = releaseVersion.getProject().getId();
+
+            // First try to find exact matches
+            List<Employee> exactMatches = employeeRepository.findSuitableEmployees(
+                    taskDTO.getDifficultyLevel(),
+                    projectId
+            );
+
+            Employee selectedEmployee;
+            if (!exactMatches.isEmpty()) {
+                // If there are exact matches, randomly select one to distribute work evenly
+                int randomIndex = (int) (Math.random() * exactMatches.size());
+                selectedEmployee = exactMatches.get(randomIndex);
+            } else {
+                // If no exact matches, find the closest match
+                List<Employee> closestMatches = employeeRepository.findClosestMatchEmployees(
+                        taskDTO.getDifficultyLevel(),
+                        projectId
+                );
+
+                if (closestMatches.isEmpty()) {
+                    throw new RuntimeException("No suitable employees found for this task");
+                }
+
+                selectedEmployee = closestMatches.get(0); // Get the closest match
+            }
+
+            User assignedUser = selectedEmployee.getUser();
+            task.setAssignedUser(assignedUser);
+            task.setAssignedDate(LocalDate.now());
         }
+
         task.setReleaseVersion(releaseVersion);
         task.setCreatedAt(LocalDateTime.now());
         task.setUpdatedAt(LocalDateTime.now());
 
         Task savedTask = taskRepository.save(task);
-
         return convertToDTO(savedTask);
     }
 
@@ -118,6 +152,77 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    @Transactional
+    public List<TaskDTO> createTasksFromMLAnalysis(
+            MLAnalysisResponse mlAnalysis,
+            Long releaseVersionId,
+            Long createUserId,
+            Integer difficultyLevel,
+            Long assignedUserId,
+            LocalDate assignedDate,
+            LocalDate startDate,
+            LocalDate deadline,
+            LocalDate completedDate
+    ) {
+        List<TaskDTO> createdTasks = new ArrayList<>();
+
+        ReleaseVersion releaseVersion = releaseVersionRepository.findById(releaseVersionId)
+                .orElseThrow(() -> new RuntimeException("Release Version not found"));
+
+        User createUser = userRepository.findById(createUserId)
+                .orElseThrow(() -> new RuntimeException("Create User not found"));
+
+        User assignedUser = userRepository.findById(assignedUserId)
+                .orElseThrow(() -> new RuntimeException("Assigned User not found"));
+
+        for (TaskBreakdown taskBreakdown : mlAnalysis.getResults()) {
+            // Create main task
+            TaskDTO mainTaskDTO = new TaskDTO();
+            mainTaskDTO.setName(taskBreakdown.getMainTask());
+            mainTaskDTO.setStatus(TaskStatus.TODO);
+            mainTaskDTO.setTags(taskBreakdown.getMainTask());
+            mainTaskDTO.setReleaseVersionId(releaseVersionId);
+            mainTaskDTO.setCreateUserId(createUserId);
+            mainTaskDTO.setDifficultyLevel(difficultyLevel);
+            mainTaskDTO.setAssignedUserId(assignedUserId);
+            mainTaskDTO.setAssignedDate(assignedDate);
+            mainTaskDTO.setStartDate(startDate);
+            mainTaskDTO.setDeadline(deadline);
+            mainTaskDTO.setCompletedDate(completedDate);
+
+            // Create the main task
+            TaskDTO createdMainTask = createTask(mainTaskDTO);
+
+            // Create subtasks
+            List<SubTaskDTO> subTasks = new ArrayList<>();
+            for (TaskDetail taskDetail : taskBreakdown.getTasks()) {
+                for (SubTaskDetail subTaskDetail : taskDetail.getSubtasks()) {
+                    SubTaskDTO subTaskDTO = new SubTaskDTO();
+                    subTaskDTO.setName(subTaskDetail.getSubtaskName());
+                    subTaskDTO.setStatus(TaskStatus.TODO);
+                    subTaskDTO.setTags(subTaskDetail.getTag());
+                    subTaskDTO.setTaskId(createdMainTask.getId());
+
+                    // Set deadline based on estimated hours
+                    LocalDate subTaskDeadline = LocalDate.now().plusDays(
+                            (long) Math.ceil(subTaskDetail.getEstimatedHours() / 8.0)
+                    );
+                    subTaskDTO.setDeadline(subTaskDeadline);
+
+                    subTasks.add(subTaskDTO);
+                }
+            }
+
+            // Update main task with subtasks
+            createdMainTask.setSubTaskList(subTasks);
+            TaskDTO updatedTask = updateTask(createdMainTask.getId(), createdMainTask);
+            createdTasks.add(updatedTask);
+        }
+
+        return createdTasks;
+    }
+
+    @Override
     public void deleteTask(Long id) {
         taskRepository.deleteById(id);
     }
@@ -136,7 +241,7 @@ public class TaskServiceImpl implements TaskService {
         Task updatedTask = taskRepository.save(task);
         return convertToDTO(updatedTask);
     }
-    private TaskDTO convertToDTO(Task task) {
+    public TaskDTO convertToDTO(Task task) {
         TaskDTO taskDTO = new TaskDTO();
         BeanUtils.copyProperties(task, taskDTO);
         taskDTO.setReleaseVersionId(task.getReleaseVersion().getId());
@@ -152,7 +257,7 @@ public class TaskServiceImpl implements TaskService {
         return taskDTO;
     }
 
-    private SubTaskDTO convertSubTaskToDTO(SubTask subTask) {
+    public SubTaskDTO convertSubTaskToDTO(SubTask subTask) {
         SubTaskDTO subTaskDTO = new SubTaskDTO();
         BeanUtils.copyProperties(subTask, subTaskDTO);
         subTaskDTO.setTaskId(subTask.getTask().getId());
@@ -161,4 +266,5 @@ public class TaskServiceImpl implements TaskService {
         }
         return subTaskDTO;
     }
+
 }
