@@ -1,5 +1,6 @@
 package com.project_management.dto;
 
+import com.project_management.models.enums.Domain;
 import lombok.Data;
 
 import java.util.List;
@@ -17,4 +18,5 @@ public class EmployeeDTO {
     private Long userId;
     private Integer maximumAssessedCount;
     private Integer difficultyLevel;
+    private Domain domain;
 }

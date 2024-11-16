@@ -1,6 +1,7 @@
 package com.project_management.controllers;
 
 import com.project_management.dto.KpiDTO;
+import com.project_management.models.enums.Domain;
 import com.project_management.services.KpiService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -28,5 +29,10 @@ public class KpiController {
     public ResponseEntity<KpiDTO> getEmployeeKpi(@PathVariable String employeeId) {
         KpiDTO kpi = kpiService.calculateKpiForEmployee(employeeId);
         return ResponseEntity.ok(kpi);
+    }
+    @GetMapping("/domain/{domain}")
+    public ResponseEntity<List<KpiDTO>> getKpiByDomain(@PathVariable Domain domain) {
+        List<KpiDTO> kpis = kpiService.calculateKpiByDomain(domain);
+        return ResponseEntity.ok(kpis);
     }
 }

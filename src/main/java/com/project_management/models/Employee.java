@@ -1,5 +1,6 @@
 package com.project_management.models;
 
+import com.project_management.models.enums.Domain;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -45,5 +46,9 @@ public class Employee {
 
     @Column(name = "difficulty_level")
     private Integer difficultyLevel;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "domain", nullable = false)
+    private Domain domain;
 }
 

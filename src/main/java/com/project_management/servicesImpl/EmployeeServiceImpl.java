@@ -48,6 +48,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setUser(associatedUser);;
         employee.setMaximumAssessedCount(employeeDTO.getMaximumAssessedCount());
         employee.setDifficultyLevel(employeeDTO.getDifficultyLevel());
+        employee.setDomain(employeeDTO.getDomain());
 
         // Generate employee ID
         String employeeId = generateUniqueEmployeeId(employeeDTO.getEmployeeName());
@@ -80,6 +81,11 @@ public class EmployeeServiceImpl implements EmployeeService {
         if (employeeDTO.getMaximumAssessedCount() != null) {
             employee.setMaximumAssessedCount(employeeDTO.getMaximumAssessedCount());
         }
+
+        if (employeeDTO.getDomain() != null) {
+            employee.setDomain(employeeDTO.getDomain());
+        }
+
 
 
         if (employeeDTO.getSkills() != null) {
@@ -216,6 +222,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         dto.setUserId(employee.getUser().getId());
         dto.setMaximumAssessedCount(employee.getMaximumAssessedCount());
         dto.setDifficultyLevel(employee.getDifficultyLevel());
+        dto.setDomain(employee.getDomain());
 
         dto.setSkills(employee.getSkills().stream().map(this::convertToSkillDTO).collect(Collectors.toList()));
         dto.setExperiences(employee.getExperiences().stream().map(this::convertToExperienceDTO).collect(Collectors.toList()));

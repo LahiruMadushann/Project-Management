@@ -2,6 +2,7 @@ package com.project_management.servicesImpl;
 
 import com.project_management.dto.KpiDTO;
 import com.project_management.models.*;
+import com.project_management.models.enums.Domain;
 import com.project_management.repositories.EmployeeRepository;
 import com.project_management.repositories.PerfectEmployeeRepository;
 import com.project_management.services.KpiService;
@@ -20,6 +21,28 @@ public class KpiCalculatorServiceImpl implements KpiService {
 
     @Autowired
     private PerfectEmployeeRepository perfectEmployeeRepository;
+
+    @Override
+    public List<KpiDTO> calculateKpiByDomain(Domain domain) {
+        List<Employee> employees;
+
+        if (domain == Domain.all) {
+            // Get all employees including those with null domains
+            employees = employeeRepository.findAll();
+        } else {
+            // Get employees for specific domain
+            employees = employeeRepository.findByDomain(domain);
+        }
+
+        List<PerfectEmployee> perfectEmployees = perfectEmployeeRepository.findAll();
+        Map<String, PerfectEmployee> perfectEmployeeMap = perfectEmployees.stream()
+                .collect(Collectors.toMap(PerfectEmployee::getRoleName, pe -> pe));
+
+        return employees.stream()
+                .map(employee -> calculateKpiForEmployee(employee, perfectEmployeeMap))
+                .collect(Collectors.toList());
+    }
+
 
     public List<KpiDTO> calculateKpiForAllEmployees() {
         List<Employee> employees = employeeRepository.findAll();
@@ -62,12 +85,13 @@ public class KpiCalculatorServiceImpl implements KpiService {
             experienceKpi = calculateDefaultCategoryKpi(employee.getExperiences());
         }
 
-        double overallKpi = (skillKpi + educationKpi + experienceKpi) / 3;
+        double overallKpi = (skillKpi + educationKpi + experienceKpi);
 
         KpiDTO kpiDTO = new KpiDTO();
         kpiDTO.setEmployeeId(employee.getEmployeeId());
         kpiDTO.setEmployeeName(employee.getEmployeeName());
         kpiDTO.setRoleName(employee.getRoleName());
+        kpiDTO.setDomain(employee.getDomain());
         kpiDTO.setOverallKpi(overallKpi);
         kpiDTO.setSkillKpi(skillKpi);
         kpiDTO.setEducationKpi(educationKpi);
