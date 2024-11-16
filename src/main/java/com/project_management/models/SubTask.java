@@ -29,6 +29,7 @@ public class SubTask {
     private User assignedUser;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 250)
     private TaskStatus status;
 
     private String tags;

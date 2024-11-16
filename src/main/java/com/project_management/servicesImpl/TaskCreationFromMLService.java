@@ -11,7 +11,6 @@ import com.project_management.repositories.SubTaskRepository;
 import com.project_management.repositories.TaskRepository;
 import com.project_management.repositories.UserRepository;
 import com.project_management.services.TaskService;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class TaskCreationFromMLService {
@@ -66,16 +66,8 @@ public class TaskCreationFromMLService {
             for (TaskDetail taskDetail : taskBreakdown.getTasks()) {
                 // Create main task
                 Task mainTask = new Task();
-                String taskName = taskDetail.getTaskName();
-                if (taskName.length() > 255) {
-                    taskName = taskName.substring(0, 255);
-                }
-                mainTask.setName(taskName);
-                String taskStatus = TaskStatus.TODO.name();
-                if (taskStatus.length() > 50) {
-                    taskStatus = taskStatus.substring(0, 50);
-                }
-                mainTask.setStatus(TaskStatus.valueOf(taskStatus));
+                mainTask.setName(taskDetail.getTaskName());
+                mainTask.setStatus(TaskStatus.TODO);
                 mainTask.setTags(taskBreakdown.getMainTask());
                 mainTask.setReleaseVersion(releaseVersion);
                 mainTask.setCreateUserId(createUser.getId());
@@ -85,50 +77,42 @@ public class TaskCreationFromMLService {
                 mainTask.setStartDate(startDate);
                 mainTask.setDeadline(deadline);
                 mainTask.setCompletedDate(completedDate);
-                mainTask.setCreatedAt(LocalDateTime.now()); // Set the createdAt field to the current time
-                mainTask.setUpdatedAt(LocalDateTime.now()); // Set the updatedAt field to the current time
+                mainTask.setCreatedAt(LocalDateTime.now());
+                mainTask.setUpdatedAt(LocalDateTime.now());
 
+                // Save the main task first
+                Task savedMainTask = taskRepository.save(mainTask);
 
-                // Create the main task
-                Task savedMainTask = taskRepository.saveAndFlush(mainTask);
-                TaskDTO createdMainTask = this.convertTaskToDTO(savedMainTask);
-
-                // Create subtasks
-                List<SubTaskDTO> subTasks = new ArrayList<>();
+                // Create and save subtasks
+                List<SubTask> subtasks = new ArrayList<>();
                 for (SubTaskDetail subTaskDetail : taskDetail.getSubtasks()) {
-                    SubTaskDTO subTask = new SubTaskDTO();
+                    SubTask subTask = new SubTask();
                     subTask.setName(subTaskDetail.getSubtaskName());
                     subTask.setStatus(TaskStatus.TODO);
                     subTask.setTags(subTaskDetail.getTag());
-                    subTask.setTaskId(savedMainTask.getId());
+                    subTask.setTask(savedMainTask);
                     subTask.setCreateUserId(createUserId);
-                    subTask.setAssignedUserId(assignedUser.getId());
+                    subTask.setAssignedUser(assignedUser);
                     subTask.setAssignedDate(LocalDate.now());
                     subTask.setStartDate(LocalDate.now());
                     subTask.setDeadline(LocalDate.now().plusDays(
                             (long) Math.ceil(subTaskDetail.getEstimatedHours() / 8.0)
                     ));
-                    subTask.setCompletedDate(null);
-//                    subTask.setC(LocalDateTime.now());
-//                    subTask.setUpdatedAt(LocalDateTime.now());
+                    subTask.setCreatedAt(LocalDateTime.now());
+                    subTask.setUpdatedAt(LocalDateTime.now());
 
-
-                    // Set deadline based on estimated hours
-                    LocalDate subTaskDeadline = LocalDate.now().plusDays(
-                            (long) Math.ceil(subTaskDetail.getEstimatedHours() / 8.0)
-                    );
-                    subTask.setDeadline(subTaskDeadline);
-
-                    subTasks.add(subTask);
-
-
-
+                    subtasks.add(subTask);
                 }
 
-                // Update main task with subtasks
-                createdMainTask.setSubTaskList(subTasks);
-                TaskDTO updatedTask = taskService.updateTask(createdMainTask.getId(), createdMainTask);
-                createdTasks.add(updatedTask);
+                // Save all subtasks
+                List<SubTask> savedSubtasks = subTaskRepository.saveAll(subtasks);
+                savedMainTask.setSubTasks(savedSubtasks);
+
+                // Save the updated main task with subtask references
+                Task finalSavedTask = taskRepository.save(savedMainTask);
+
+                // Convert to DTO and add to result list
+                createdTasks.add(convertTaskToDTO(finalSavedTask));
             }
         }
 
@@ -144,21 +128,39 @@ public class TaskCreationFromMLService {
         taskDTO.setReleaseVersionId(task.getReleaseVersion().getId());
         taskDTO.setCreateUserId(task.getCreateUserId());
         taskDTO.setDifficultyLevel(task.getDifficultyLevel());
-        taskDTO.setAssignedUserId(task.getAssignedUser().getId());
+        if (task.getAssignedUser() != null) {
+            taskDTO.setAssignedUserId(task.getAssignedUser().getId());
+        }
         taskDTO.setAssignedDate(task.getAssignedDate());
         taskDTO.setStartDate(task.getStartDate());
         taskDTO.setDeadline(task.getDeadline());
         taskDTO.setCompletedDate(task.getCompletedDate());
+
+        // Convert subtasks
+        if (task.getSubTasks() != null && !task.getSubTasks().isEmpty()) {
+            taskDTO.setSubTaskList(task.getSubTasks().stream()
+                    .map(this::convertSubTaskToDTO)
+                    .collect(Collectors.toList()));
+        }
+
         return taskDTO;
     }
 
     private SubTaskDTO convertSubTaskToDTO(SubTask subTask) {
         SubTaskDTO subTaskDTO = new SubTaskDTO();
-        BeanUtils.copyProperties(subTask, subTaskDTO);
+        subTaskDTO.setId(subTask.getId());
         subTaskDTO.setTaskId(subTask.getTask().getId());
+        subTaskDTO.setName(subTask.getName());
+        subTaskDTO.setStatus(subTask.getStatus());
+        subTaskDTO.setTags(subTask.getTags());
+        subTaskDTO.setCreateUserId(subTask.getCreateUserId());
         if (subTask.getAssignedUser() != null) {
             subTaskDTO.setAssignedUserId(subTask.getAssignedUser().getId());
         }
+        subTaskDTO.setAssignedDate(subTask.getAssignedDate());
+        subTaskDTO.setStartDate(subTask.getStartDate());
+        subTaskDTO.setDeadline(subTask.getDeadline());
+        subTaskDTO.setCompletedDate(subTask.getCompletedDate());
         return subTaskDTO;
     }
 }
