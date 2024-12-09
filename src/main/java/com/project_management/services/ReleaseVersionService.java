@@ -9,4 +9,5 @@ public interface ReleaseVersionService {
     List<ReleaseVersionDTO> getAllReleaseVersions();
     ReleaseVersionDTO updateReleaseVersion(Long id, ReleaseVersionDTO releaseVersionDTO);
     void deleteReleaseVersion(Long id);
+    List<ReleaseVersionDTO> getReleaseVersionsByProjectId(Long projectId);
 }

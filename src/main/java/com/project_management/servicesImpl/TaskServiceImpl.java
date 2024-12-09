@@ -92,6 +92,16 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    public List<TaskDTO> getTasksByReleaseVersionId(Long releaseVersionId) {
+        ReleaseVersion releaseVersion = releaseVersionRepository.findById(releaseVersionId)
+                .orElseThrow(() -> new RuntimeException("Release Version not found"));
+
+        return taskRepository.findByReleaseVersion(releaseVersion).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<TaskDTO> getAllTasks() {
         return taskRepository.findAll().stream()
                 .map(this::convertToDTO)

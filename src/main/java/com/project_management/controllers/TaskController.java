@@ -54,6 +54,12 @@ public class TaskController {
         return ResponseEntity.ok(task);
     }
 
+    @GetMapping("/release-version/{releaseVersionId}")
+    public ResponseEntity<List<TaskDTO>> getTasksByReleaseVersionId(@PathVariable Long releaseVersionId) {
+        List<TaskDTO> tasks = taskService.getTasksByReleaseVersionId(releaseVersionId);
+        return ResponseEntity.ok(tasks);
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<TaskDTO> updateTask(@PathVariable Long id, @RequestBody TaskDTO taskDTO) {
         TaskDTO updatedTask = taskService.updateTask(id, taskDTO);

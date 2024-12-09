@@ -30,6 +30,12 @@ public class ReleaseVersionController {
         return ResponseEntity.ok(releaseVersion);
     }
 
+    @GetMapping("/project/{projectId}")
+    public ResponseEntity<List<ReleaseVersionDTO>> getReleaseVersionsByProjectId(@PathVariable Long projectId) {
+        List<ReleaseVersionDTO> releaseVersions = releaseVersionService.getReleaseVersionsByProjectId(projectId);
+        return ResponseEntity.ok(releaseVersions);
+    }
+
     @GetMapping
     public ResponseEntity<List<ReleaseVersionDTO>> getAllReleaseVersions() {
         List<ReleaseVersionDTO> releaseVersion = releaseVersionService.getAllReleaseVersions();

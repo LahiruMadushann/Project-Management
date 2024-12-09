@@ -51,6 +51,14 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
     }
 
     @Override
+    public List<ReleaseVersionDTO> getReleaseVersionsByProjectId(Long projectId) {
+        List<ReleaseVersion> releaseVersions = releaseVersionRepository.findByProjectId(projectId);
+        return releaseVersions.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public List<ReleaseVersionDTO> getAllReleaseVersions() {
         return releaseVersionRepository.findAll().stream()
                 .map(this::convertToDTO)
