@@ -18,8 +18,13 @@ public class SignupController {
     private SignupService signupService;
 
     @PostMapping("/signup")
-    public ResponseEntity<SignupResponseDTO> signup(@RequestBody SignupRequestDTO signupRequestDTO) {
-        SignupResponseDTO signupResponse = signupService.signup(signupRequestDTO);
-        return ResponseEntity.ok(signupResponse);
+    public ResponseEntity<?> signup(@RequestBody SignupRequestDTO signupRequestDTO) {
+        try {
+            SignupResponseDTO signupResponse = signupService.signup(signupRequestDTO);
+            return ResponseEntity.ok(signupResponse);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body("Error during user signup: " + e.getMessage());
+        }
     }
 }

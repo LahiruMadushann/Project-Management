@@ -17,32 +17,52 @@ public class ProjectController {
     private ProjectService projectService;
 
     @PostMapping
-    public ResponseEntity<ProjectDTO> createProject(@RequestBody ProjectDTO projectDTO) {
-        ProjectDTO createdProject = projectService.createProject(projectDTO);
-        return new ResponseEntity<>(createdProject, HttpStatus.CREATED);
+    public ResponseEntity<?> createProject(@RequestBody ProjectDTO projectDTO) {
+        try {
+            ProjectDTO createdProject = projectService.createProject(projectDTO);
+            return new ResponseEntity<>(createdProject, HttpStatus.CREATED);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error creating project: " + e.getMessage());
+        }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProjectDTO> getProjectById(@PathVariable Long id) {
-        ProjectDTO project = projectService.getProjectById(id);
-        return ResponseEntity.ok(project);
+    public ResponseEntity<?> getProjectById(@PathVariable Long id) {
+        try {
+            ProjectDTO project = projectService.getProjectById(id);
+            return ResponseEntity.ok(project);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error retrieving project with ID " + id + ": " + e.getMessage());
+        }
     }
 
     @GetMapping
-    public ResponseEntity<List<ProjectDTO>> getAllProjects() {
-        List<ProjectDTO> projects = projectService.getAllProjects();
-        return ResponseEntity.ok(projects);
+    public ResponseEntity<?> getAllProjects() {
+        try {
+            List<ProjectDTO> projects = projectService.getAllProjects();
+            return ResponseEntity.ok(projects);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error retrieving all projects: " + e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ProjectDTO> updateProject(@PathVariable Long id, @RequestBody ProjectDTO projectDTO) {
-        ProjectDTO updatedProject = projectService.updateProject(id, projectDTO);
-        return ResponseEntity.ok(updatedProject);
+    public ResponseEntity<?> updateProject(@PathVariable Long id, @RequestBody ProjectDTO projectDTO) {
+        try {
+            ProjectDTO updatedProject = projectService.updateProject(id, projectDTO);
+            return ResponseEntity.ok(updatedProject);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error updating project with ID " + id + ": " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProject(@PathVariable Long id) {
-        projectService.deleteProject(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deleteProject(@PathVariable Long id) {
+        try {
+            projectService.deleteProject(id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error deleting project with ID " + id + ": " + e.getMessage());
+        }
     }
 }

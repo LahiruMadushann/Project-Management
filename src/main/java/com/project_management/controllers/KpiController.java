@@ -20,19 +20,32 @@ public class KpiController {
     private KpiService kpiService;
 
     @GetMapping("/all")
-    public ResponseEntity<List<KpiDTO>> getAllEmployeesKpi() {
-        List<KpiDTO> kpis = kpiService.calculateKpiForAllEmployees();
-        return ResponseEntity.ok(kpis);
+    public ResponseEntity<?> getAllEmployeesKpi() {
+        try {
+            List<KpiDTO> kpis = kpiService.calculateKpiForAllEmployees();
+            return ResponseEntity.ok(kpis);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error calculating KPIs for all employees: " + e.getMessage());
+        }
     }
 
     @GetMapping("/{employeeId}")
-    public ResponseEntity<KpiDTO> getEmployeeKpi(@PathVariable String employeeId) {
-        KpiDTO kpi = kpiService.calculateKpiForEmployee(employeeId);
-        return ResponseEntity.ok(kpi);
+    public ResponseEntity<?> getEmployeeKpi(@PathVariable String employeeId) {
+        try {
+            KpiDTO kpi = kpiService.calculateKpiForEmployee(employeeId);
+            return ResponseEntity.ok(kpi);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error calculating KPI for employee " + employeeId + ": " + e.getMessage());
+        }
     }
+
     @GetMapping("/domain/{domain}")
-    public ResponseEntity<List<KpiDTO>> getKpiByDomain(@PathVariable Domain domain) {
-        List<KpiDTO> kpis = kpiService.calculateKpiByDomain(domain);
-        return ResponseEntity.ok(kpis);
+    public ResponseEntity<?> getKpiByDomain(@PathVariable Domain domain) {
+        try {
+            List<KpiDTO> kpis = kpiService.calculateKpiByDomain(domain);
+            return ResponseEntity.ok(kpis);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error calculating KPIs for domain " + domain + ": " + e.getMessage());
+        }
     }
 }

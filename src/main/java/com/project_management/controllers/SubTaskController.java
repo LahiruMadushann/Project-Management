@@ -1,7 +1,6 @@
 package com.project_management.controllers;
 
 import com.project_management.dto.SubTaskDTO;
-import com.project_management.dto.TaskDTO;
 import com.project_management.services.SubTaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,39 +17,63 @@ public class SubTaskController {
     private SubTaskService subTaskService;
 
     @PostMapping
-    public ResponseEntity<SubTaskDTO> createSubTask(@RequestBody SubTaskDTO subTaskDTO) {
-        SubTaskDTO createdSubTask = subTaskService.createSubTask(subTaskDTO);
-        return new ResponseEntity<>(createdSubTask, HttpStatus.CREATED);
+    public ResponseEntity<?> createSubTask(@RequestBody SubTaskDTO subTaskDTO) {
+        try {
+            SubTaskDTO createdSubTask = subTaskService.createSubTask(subTaskDTO);
+            return new ResponseEntity<>(createdSubTask, HttpStatus.CREATED);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error creating subtask: " + e.getMessage());
+        }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<SubTaskDTO> getSubTaskById(@PathVariable Long id) {
-        SubTaskDTO subTask = subTaskService.getSubTaskById(id);
-        return ResponseEntity.ok(subTask);
+    public ResponseEntity<?> getSubTaskById(@PathVariable Long id) {
+        try {
+            SubTaskDTO subTask = subTaskService.getSubTaskById(id);
+            return ResponseEntity.ok(subTask);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error retrieving subtask with ID " + id + ": " + e.getMessage());
+        }
     }
 
     @GetMapping
-    public ResponseEntity<List<SubTaskDTO>> getAllSubTasks() {
-        List<SubTaskDTO> subTask = subTaskService.getAllSubTasks();
-        return ResponseEntity.ok(subTask);
+    public ResponseEntity<?> getAllSubTasks() {
+        try {
+            List<SubTaskDTO> subTasks = subTaskService.getAllSubTasks();
+            return ResponseEntity.ok(subTasks);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error retrieving all subtasks: " + e.getMessage());
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<SubTaskDTO> updateSubTask(@PathVariable Long id, @RequestBody SubTaskDTO subTaskDTO) {
-        SubTaskDTO updatedSubTask = subTaskService.updateSubTask(id, subTaskDTO);
-        return ResponseEntity.ok(updatedSubTask);
+    public ResponseEntity<?> updateSubTask(@PathVariable Long id, @RequestBody SubTaskDTO subTaskDTO) {
+        try {
+            SubTaskDTO updatedSubTask = subTaskService.updateSubTask(id, subTaskDTO);
+            return ResponseEntity.ok(updatedSubTask);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error updating subtask with ID " + id + ": " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSubTask(@PathVariable Long id) {
-        subTaskService.deleteSubTask(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deleteSubTask(@PathVariable Long id) {
+        try {
+            subTaskService.deleteSubTask(id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error deleting subtask with ID " + id + ": " + e.getMessage());
+        }
     }
 
     @PatchMapping("/{subTaskId}/assign/{userId}")
-    public ResponseEntity<SubTaskDTO> assignSubTaskToUser(@PathVariable Long subTaskId, @PathVariable Long userId) {
-        SubTaskDTO updatedSubTask = subTaskService.assignSubTaskToUser(subTaskId, userId);
-        return ResponseEntity.ok(updatedSubTask);
+    public ResponseEntity<?> assignSubTaskToUser(@PathVariable Long subTaskId, @PathVariable Long userId) {
+        try {
+            SubTaskDTO updatedSubTask = subTaskService.assignSubTaskToUser(subTaskId, userId);
+            return ResponseEntity.ok(updatedSubTask);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body("Error assigning subtask " + subTaskId + " to user " + userId + ": " + e.getMessage());
+        }
     }
-
 }

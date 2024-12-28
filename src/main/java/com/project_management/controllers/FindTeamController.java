@@ -19,28 +19,44 @@ public class FindTeamController {
     private TeamService teamService;
 
     @GetMapping("/find")
-    public ResponseEntity<List<TeamAssignment>> getTeam(@RequestBody FindTeamDTO findTeamDTO) {
-        List<TeamAssignment> assignedTeam = teamService.findAndAssignTeam(findTeamDTO);
-        return ResponseEntity.ok(assignedTeam);
+    public ResponseEntity<?> getTeam(@RequestBody FindTeamDTO findTeamDTO) {
+        try {
+            List<TeamAssignment> assignedTeam = teamService.findAndAssignTeam(findTeamDTO);
+            return ResponseEntity.ok(assignedTeam);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error finding team: " + e.getMessage());
+        }
     }
 
     @GetMapping("/project/{projectId}")
-    public ResponseEntity<List<TeamAssignment>> getTeamByProject(@PathVariable Long projectId) {
-        List<TeamAssignment> team = teamService.getTeamByProjectId(projectId);
-        return ResponseEntity.ok(team);
+    public ResponseEntity<?> getTeamByProject(@PathVariable Long projectId) {
+        try {
+            List<TeamAssignment> team = teamService.getTeamByProjectId(projectId);
+            return ResponseEntity.ok(team);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error retrieving team: " + e.getMessage());
+        }
     }
 
     @PutMapping("/update")
-    public ResponseEntity<List<TeamAssignment>> updateTeam(@RequestBody TeamUpdateDTO updateDTO) {
-        List<TeamAssignment> updatedTeam = teamService.updateTeam(updateDTO);
-        return ResponseEntity.ok(updatedTeam);
+    public ResponseEntity<?> updateTeam(@RequestBody TeamUpdateDTO updateDTO) {
+        try {
+            List<TeamAssignment> updatedTeam = teamService.updateTeam(updateDTO);
+            return ResponseEntity.ok(updatedTeam);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error updating team: " + e.getMessage());
+        }
     }
 
     @PutMapping("/project/{projectId}/member")
-    public ResponseEntity<TeamAssignment> updateTeamMember(
+    public ResponseEntity<?> updateTeamMember(
             @PathVariable Long projectId,
             @RequestBody TeamMemberUpdateDTO updateDTO) {
-        TeamAssignment updatedMember = teamService.updateTeamMember(projectId, updateDTO);
-        return ResponseEntity.ok(updatedMember);
+        try {
+            TeamAssignment updatedMember = teamService.updateTeamMember(projectId, updateDTO);
+            return ResponseEntity.ok(updatedMember);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error updating team member: " + e.getMessage());
+        }
     }
 }

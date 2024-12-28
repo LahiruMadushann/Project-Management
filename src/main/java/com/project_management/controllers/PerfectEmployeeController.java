@@ -12,7 +12,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/perfect-employees")
@@ -28,36 +27,68 @@ public class PerfectEmployeeController {
     private JwtTokenProvider jwtTokenProvider;
 
     @PostMapping
-    public ResponseEntity<PerfectEmployeeDTO> createPerfectEmployee(@RequestBody PerfectEmployeeDTO perfectEmployeeDTO) {
-        String token = getTokenFromRequest();
-        Long userId = jwtTokenProvider.getUserId(token);
-        return ResponseEntity.ok(perfectEmployeeService.savePerfectEmployee(perfectEmployeeDTO, userId));
+    public ResponseEntity<?> createPerfectEmployee(@RequestBody PerfectEmployeeDTO perfectEmployeeDTO) {
+        try {
+            String token = getTokenFromRequest();
+            Long userId = jwtTokenProvider.getUserId(token);
+            PerfectEmployeeDTO createdEmployee = perfectEmployeeService.savePerfectEmployee(perfectEmployeeDTO, userId);
+            return ResponseEntity.ok(createdEmployee);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error creating perfect employee: " + e.getMessage());
+        }
     }
 
     @PutMapping("/{employeeId}")
-    public ResponseEntity<PerfectEmployeeDTO> updatePerfectEmployee(@PathVariable String employeeId, @RequestBody PerfectEmployeeDTO perfectEmployeeDTO) {
-        return ResponseEntity.ok(perfectEmployeeService.updatePerfectEmployee(employeeId, perfectEmployeeDTO));
+    public ResponseEntity<?> updatePerfectEmployee(@PathVariable String employeeId,
+                                                   @RequestBody PerfectEmployeeDTO perfectEmployeeDTO) {
+        try {
+            PerfectEmployeeDTO updatedEmployee = perfectEmployeeService.updatePerfectEmployee(employeeId, perfectEmployeeDTO);
+            return ResponseEntity.ok(updatedEmployee);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error updating perfect employee: " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/{employeeId}")
-    public ResponseEntity<Void> deletePerfectEmployee(@PathVariable String employeeId) {
-        perfectEmployeeService.deletePerfectEmployee(employeeId);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deletePerfectEmployee(@PathVariable String employeeId) {
+        try {
+            perfectEmployeeService.deletePerfectEmployee(employeeId);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error deleting perfect employee: " + e.getMessage());
+        }
     }
 
     @GetMapping("/{employeeId}")
-    public ResponseEntity<PerfectEmployeeDTO> getPerfectEmployee(@PathVariable String employeeId) {
-        return ResponseEntity.ok(perfectEmployeeService.getPerfectEmployee(employeeId));
+    public ResponseEntity<?> getPerfectEmployee(@PathVariable String employeeId) {
+        try {
+            PerfectEmployeeDTO employee = perfectEmployeeService.getPerfectEmployee(employeeId);
+            return ResponseEntity.ok(employee);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error retrieving perfect employee: " + e.getMessage());
+        }
     }
 
     @GetMapping
-    public ResponseEntity<List<PerfectEmployeeDTO>> getAllPerfectEmployees() {
-        return ResponseEntity.ok(perfectEmployeeService.getAllPerfectEmployees());
+    public ResponseEntity<?> getAllPerfectEmployees() {
+        try {
+            List<PerfectEmployeeDTO> employees = perfectEmployeeService.getAllPerfectEmployees();
+            return ResponseEntity.ok(employees);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error retrieving all perfect employees: " + e.getMessage());
+        }
     }
 
     @GetMapping("/roles")
-    public ResponseEntity<List<String>> getAllRoles() {
-        return ResponseEntity.ok(perfectRoleService.getAllRoles().stream().map(PerfectRole::getRoleName).toList());
+    public ResponseEntity<?> getAllRoles() {
+        try {
+            List<String> roles = perfectRoleService.getAllRoles().stream()
+                    .map(PerfectRole::getRoleName)
+                    .toList();
+            return ResponseEntity.ok(roles);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error retrieving all roles: " + e.getMessage());
+        }
     }
 
     private String getTokenFromRequest() {
