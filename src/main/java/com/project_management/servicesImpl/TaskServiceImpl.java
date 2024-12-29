@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,7 +38,7 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public TaskDTO createTask(TaskDTO taskDTO) {
         ReleaseVersion releaseVersion = releaseVersionRepository.findById(taskDTO.getReleaseVersionId())
-                .orElseThrow(() -> new RuntimeException("Release Version not found"));
+                .orElseThrow(() -> new NoSuchElementException("Release Version not found"));
 
         Task task = new Task();
         BeanUtils.copyProperties(taskDTO, task, "id", "releaseVersion", "assignedUser");
@@ -65,7 +66,7 @@ public class TaskServiceImpl implements TaskService {
                 );
 
                 if (closestMatches.isEmpty()) {
-                    throw new RuntimeException("No suitable employees found for this task");
+                    throw new NoSuchElementException("No suitable employees found for this task");
                 }
 
                 selectedEmployee = closestMatches.get(0); // Get the closest match

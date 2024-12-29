@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/projects")
@@ -17,32 +18,71 @@ public class ProjectController {
     private ProjectService projectService;
 
     @PostMapping
-    public ResponseEntity<ProjectDTO> createProject(@RequestBody ProjectDTO projectDTO) {
-        ProjectDTO createdProject = projectService.createProject(projectDTO);
-        return new ResponseEntity<>(createdProject, HttpStatus.CREATED);
+    public ResponseEntity<?> createProject(@RequestBody ProjectDTO projectDTO) {
+        try {
+            ProjectDTO createdProject = projectService.createProject(projectDTO);
+            return new ResponseEntity<>(createdProject, HttpStatus.CREATED);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return handleException(e);
+        }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProjectDTO> getProjectById(@PathVariable Long id) {
-        ProjectDTO project = projectService.getProjectById(id);
-        return ResponseEntity.ok(project);
+    public ResponseEntity<?> getProjectById(@PathVariable Long id) {
+        try {
+            ProjectDTO project = projectService.getProjectById(id);
+            return ResponseEntity.ok(project);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return handleException(e);
+        }
     }
 
     @GetMapping
-    public ResponseEntity<List<ProjectDTO>> getAllProjects() {
-        List<ProjectDTO> projects = projectService.getAllProjects();
-        return ResponseEntity.ok(projects);
+    public ResponseEntity<?> getAllProjects() {
+        try {
+            List<ProjectDTO> projects = projectService.getAllProjects();
+            return ResponseEntity.ok(projects);
+        } catch (Exception e) {
+            return handleException(e);
+        }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ProjectDTO> updateProject(@PathVariable Long id, @RequestBody ProjectDTO projectDTO) {
-        ProjectDTO updatedProject = projectService.updateProject(id, projectDTO);
-        return ResponseEntity.ok(updatedProject);
+    public ResponseEntity<?> updateProject(@PathVariable Long id, @RequestBody ProjectDTO projectDTO) {
+        try {
+            ProjectDTO updatedProject = projectService.updateProject(id, projectDTO);
+            return ResponseEntity.ok(updatedProject);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return handleException(e);
+        }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteProject(@PathVariable Long id) {
-        projectService.deleteProject(id);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deleteProject(@PathVariable Long id) {
+        try {
+            projectService.deleteProject(id);
+            return ResponseEntity.noContent().build();
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return handleException(e);
+        }
+    }
+
+    private ResponseEntity<String> handleException(Exception e) {
+        e.printStackTrace();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred: " + e.getMessage());
     }
 }

@@ -6,13 +6,14 @@ import com.project_management.security.jwt.JwtTokenProvider;
 import com.project_management.services.PerfectEmployeeService;
 import com.project_management.services.PerfectRoleService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/perfect-employees")
@@ -28,36 +29,81 @@ public class PerfectEmployeeController {
     private JwtTokenProvider jwtTokenProvider;
 
     @PostMapping
-    public ResponseEntity<PerfectEmployeeDTO> createPerfectEmployee(@RequestBody PerfectEmployeeDTO perfectEmployeeDTO) {
-        String token = getTokenFromRequest();
-        Long userId = jwtTokenProvider.getUserId(token);
-        return ResponseEntity.ok(perfectEmployeeService.savePerfectEmployee(perfectEmployeeDTO, userId));
+    public ResponseEntity<?> createPerfectEmployee(@RequestBody PerfectEmployeeDTO perfectEmployeeDTO) {
+        try {
+            String token = getTokenFromRequest();
+            Long userId = jwtTokenProvider.getUserId(token);
+            PerfectEmployeeDTO createdEmployee = perfectEmployeeService.savePerfectEmployee(perfectEmployeeDTO, userId);
+            return ResponseEntity.ok(createdEmployee);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return handleException(e);
+        }
     }
 
     @PutMapping("/{employeeId}")
-    public ResponseEntity<PerfectEmployeeDTO> updatePerfectEmployee(@PathVariable String employeeId, @RequestBody PerfectEmployeeDTO perfectEmployeeDTO) {
-        return ResponseEntity.ok(perfectEmployeeService.updatePerfectEmployee(employeeId, perfectEmployeeDTO));
+    public ResponseEntity<?> updatePerfectEmployee(@PathVariable String employeeId, @RequestBody PerfectEmployeeDTO perfectEmployeeDTO) {
+        try {
+            PerfectEmployeeDTO updatedEmployee = perfectEmployeeService.updatePerfectEmployee(employeeId, perfectEmployeeDTO);
+            return ResponseEntity.ok(updatedEmployee);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return handleException(e);
+        }
     }
 
     @DeleteMapping("/{employeeId}")
-    public ResponseEntity<Void> deletePerfectEmployee(@PathVariable String employeeId) {
-        perfectEmployeeService.deletePerfectEmployee(employeeId);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deletePerfectEmployee(@PathVariable String employeeId) {
+        try {
+            perfectEmployeeService.deletePerfectEmployee(employeeId);
+            return ResponseEntity.noContent().build();
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return handleException(e);
+        }
     }
 
     @GetMapping("/{employeeId}")
-    public ResponseEntity<PerfectEmployeeDTO> getPerfectEmployee(@PathVariable String employeeId) {
-        return ResponseEntity.ok(perfectEmployeeService.getPerfectEmployee(employeeId));
+    public ResponseEntity<?> getPerfectEmployee(@PathVariable String employeeId) {
+        try {
+            PerfectEmployeeDTO perfectEmployee = perfectEmployeeService.getPerfectEmployee(employeeId);
+            return ResponseEntity.ok(perfectEmployee);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return handleException(e);
+        }
     }
 
     @GetMapping
-    public ResponseEntity<List<PerfectEmployeeDTO>> getAllPerfectEmployees() {
-        return ResponseEntity.ok(perfectEmployeeService.getAllPerfectEmployees());
+    public ResponseEntity<?> getAllPerfectEmployees() {
+        try {
+            List<PerfectEmployeeDTO> perfectEmployees = perfectEmployeeService.getAllPerfectEmployees();
+            return ResponseEntity.ok(perfectEmployees);
+        } catch (Exception e) {
+            return handleException(e);
+        }
     }
 
     @GetMapping("/roles")
-    public ResponseEntity<List<String>> getAllRoles() {
-        return ResponseEntity.ok(perfectRoleService.getAllRoles().stream().map(PerfectRole::getRoleName).toList());
+    public ResponseEntity<?> getAllRoles() {
+        try {
+            List<String> roles = perfectRoleService.getAllRoles().stream().map(PerfectRole::getRoleName).toList();
+            return ResponseEntity.ok(roles);
+        } catch (Exception e) {
+            return handleException(e);
+        }
     }
 
     private String getTokenFromRequest() {
@@ -66,5 +112,10 @@ public class PerfectEmployeeController {
             return (String) authentication.getCredentials();
         }
         throw new RuntimeException("No authentication token found");
+    }
+
+    private ResponseEntity<String> handleException(Exception e) {
+        e.printStackTrace();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred: " + e.getMessage());
     }
 }
