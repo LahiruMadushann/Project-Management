@@ -121,27 +121,47 @@ public class TaskController {
         }
     }
 
+//    @PostMapping("/create-from-stories")
+//    public ResponseEntity<?> createTasksFromUserStories(@RequestBody CreateTasksFromMLRequest request) {
+//        try {
+//            if (request.getResults() == null) {
+//                return ResponseEntity
+//                        .status(HttpStatus.BAD_REQUEST)
+//                        .body(new ErrorResponse("MLAnalysisResponse is required"));
+//            }
+//
+//            List<TaskDTO> createdTasks = taskCreationFromMLService.createTasksFromMLAnalysis(
+//                    request.getResults(),
+//                    request.getReleaseVersionId(),
+//                    request.getCreateUserId(),
+//                    request.getDifficultyLevel(),
+//                    request.getAssignedUserId(),
+//                    request.getAssignedDate(),
+//                    request.getStartDate(),
+//                    request.getDeadline(),
+//                    request.getCompletedDate()
+//            );
+//            log.info("Successfully created {} tasks from ML analysis", createdTasks.size());
+//            return new ResponseEntity<>(createdTasks, HttpStatus.CREATED);
+//        } catch (Exception e) {
+//            log.error("Error processing request: ", e);
+//            return ResponseEntity
+//                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                    .body(new ErrorResponse("Error processing request: " + e.getMessage()));
+//        }
+//    }
+
     @PostMapping("/create-from-stories")
-    public ResponseEntity<?> createTasksFromUserStories(@RequestBody CreateTasksFromMLRequest request) {
+    public ResponseEntity<?> createTasksFromUserStories(@RequestBody CreateTasksFromStoriesRequest request) {
         try {
-            if (request.getResults() == null) {
+            if (request.getSimpleUserStories() == null || request.getSimpleUserStories().isEmpty()) {
                 return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
-                        .body(new ErrorResponse("MLAnalysisResponse is required"));
+                        .body(new ErrorResponse("User stories are required"));
             }
 
-            List<TaskDTO> createdTasks = taskCreationFromMLService.createTasksFromMLAnalysis(
-                    request.getResults(),
-                    request.getReleaseVersionId(),
-                    request.getCreateUserId(),
-                    request.getDifficultyLevel(),
-                    request.getAssignedUserId(),
-                    request.getAssignedDate(),
-                    request.getStartDate(),
-                    request.getDeadline(),
-                    request.getCompletedDate()
-            );
-            log.info("Successfully created {} tasks from ML analysis", createdTasks.size());
+            List<TaskDTO> createdTasks = taskCreationFromMLService.createTasksFromStories(request);
+            log.info("Successfully created {} tasks from user stories", createdTasks.size());
             return new ResponseEntity<>(createdTasks, HttpStatus.CREATED);
         } catch (Exception e) {
             log.error("Error processing request: ", e);

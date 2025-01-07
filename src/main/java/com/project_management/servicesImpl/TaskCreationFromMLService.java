@@ -11,17 +11,25 @@ import com.project_management.repositories.SubTaskRepository;
 import com.project_management.repositories.TaskRepository;
 import com.project_management.repositories.UserRepository;
 import com.project_management.services.TaskService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class TaskCreationFromMLService {
 
     @Autowired
@@ -38,6 +46,12 @@ public class TaskCreationFromMLService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Value("${ml.service.url}")
+    private String mlServiceUrl;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     @Transactional
     public List<TaskDTO> createTasksFromMLAnalysis(
@@ -119,7 +133,70 @@ public class TaskCreationFromMLService {
         return createdTasks;
     }
 
-    private TaskDTO convertTaskToDTO(Task task) {
+    @Transactional
+    public List<TaskDTO> createTasksFromStories(CreateTasksFromStoriesRequest request) {
+        try {
+            // Create request body exactly matching Python API expectations
+            Map<String, List<Map<String, String>>> mlRequest = new HashMap<>();
+            List<Map<String, String>> stories = request.getSimpleUserStories().stream()
+                    .map(story -> {
+                        Map<String, String> storyMap = new HashMap<>();
+                        storyMap.put("user_type", story.getUserType().toLowerCase());
+                        storyMap.put("action", story.getAction().toLowerCase());
+                        storyMap.put("what", story.getWhat().toLowerCase());
+                        storyMap.put("context", story.getContext().toLowerCase());
+                        return storyMap;
+                    })
+                    .collect(Collectors.toList());
+
+            mlRequest.put("simple_user_stories", stories);
+
+            // Add debug logging
+            log.debug("Sending request to ML service: {}", mlRequest);
+
+            // Make HTTP request with proper headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, List<Map<String, String>>>> entity =
+                    new HttpEntity<>(mlRequest, headers);
+
+            ResponseEntity<MLAnalysisResponse> mlResponse = restTemplate.exchange(
+                    mlServiceUrl,
+                    HttpMethod.POST,
+                    entity,
+                    MLAnalysisResponse.class
+            );
+
+            if (!mlResponse.getStatusCode().is2xxSuccessful() || mlResponse.getBody() == null) {
+                throw new RuntimeException("Failed to get analysis from ML service: " +
+                        mlResponse.getStatusCode());
+            }
+
+            // Create tasks using the ML analysis
+            return createTasksFromMLAnalysis(
+                    mlResponse.getBody(),
+                    request.getReleaseVersionId(),
+                    request.getCreateUserId(),
+                    request.getDifficultyLevel(),
+                    request.getAssignedUserId(),
+                    request.getAssignedDate(),
+                    request.getStartDate(),
+                    request.getDeadline(),
+                    request.getCompletedDate()
+            );
+
+        } catch (HttpStatusCodeException e) {
+            log.error("ML service error response: {}", e.getResponseBodyAsString());
+            throw new RuntimeException("ML service error: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("Error calling ML service: ", e);
+            throw new RuntimeException("Failed to process user stories: " + e.getMessage(), e);
+        }
+    }
+
+
+
+private TaskDTO convertTaskToDTO(Task task) {
         TaskDTO taskDTO = new TaskDTO();
         taskDTO.setId(task.getId());
         taskDTO.setName(task.getName());

@@ -65,15 +65,15 @@ public class TaskServiceImpl implements TaskService {
                         projectId
                 );
 
-                if (closestMatches.isEmpty()) {
-                    throw new NoSuchElementException("No suitable employees found for this task");
-                }
-
-                selectedEmployee = closestMatches.get(0); // Get the closest match
+//                if (closestMatches.isEmpty()) {
+//                    throw new NoSuchElementException("No suitable employees found for this task");
+//                }
+//
+//                selectedEmployee = closestMatches.get(0); // Get the closest match
             }
 
-            User assignedUser = selectedEmployee.getUser();
-            task.setAssignedUser(assignedUser);
+//            User assignedUser = selectedEmployee.getUser();
+//            task.setAssignedUser(assignedUser);
             task.setAssignedDate(LocalDate.now());
         }
 
