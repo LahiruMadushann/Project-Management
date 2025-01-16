@@ -1,6 +1,7 @@
 package com.project_management.controllers;
 
 import com.project_management.dto.SubTaskDTO;
+import com.project_management.security.utils.SecurityUtil;
 import com.project_management.services.SubTaskService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,7 @@ public class SubTaskController {
     @PostMapping
     public ResponseEntity<?> createSubTask(@RequestBody SubTaskDTO subTaskDTO) {
         try {
+            subTaskDTO.setCreateUserId(SecurityUtil.getCurrentUserId());
             SubTaskDTO createdSubTask = subTaskService.createSubTask(subTaskDTO);
             return new ResponseEntity<>(createdSubTask, HttpStatus.CREATED);
         } catch (NoSuchElementException e) {
@@ -58,6 +60,7 @@ public class SubTaskController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateSubTask(@PathVariable Long id, @RequestBody SubTaskDTO subTaskDTO) {
         try {
+            subTaskDTO.setCreateUserId(SecurityUtil.getCurrentUserId());
             SubTaskDTO updatedSubTask = subTaskService.updateSubTask(id, subTaskDTO);
             return ResponseEntity.ok(updatedSubTask);
         } catch (NoSuchElementException e) {

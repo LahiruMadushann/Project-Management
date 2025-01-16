@@ -1,6 +1,7 @@
 package com.project_management.controllers;
 
 import com.project_management.dto.*;
+import com.project_management.security.utils.SecurityUtil;
 import com.project_management.services.TaskService;
 import com.project_management.servicesImpl.TaskCreationFromMLService;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ public class TaskController {
     @PostMapping
     public ResponseEntity<?> createTask(@RequestBody TaskDTO taskDTO) {
         try {
+            taskDTO.setCreateUserId(SecurityUtil.getCurrentUserId());
             TaskDTO createdTask = taskService.createTask(taskDTO);
             return new ResponseEntity<>(createdTask, HttpStatus.CREATED);
         } catch (NoSuchElementException e) {
@@ -82,6 +84,7 @@ public class TaskController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateTask(@PathVariable Long id, @RequestBody TaskDTO taskDTO) {
         try {
+            taskDTO.setCreateUserId(SecurityUtil.getCurrentUserId());
             TaskDTO updatedTask = taskService.updateTask(id, taskDTO);
             return ResponseEntity.ok(updatedTask);
         } catch (NoSuchElementException e) {
@@ -154,6 +157,7 @@ public class TaskController {
     @PostMapping("/create-from-stories")
     public ResponseEntity<?> createTasksFromUserStories(@RequestBody CreateTasksFromStoriesRequest request) {
         try {
+            request.setCreateUserId(SecurityUtil.getCurrentUserId());
             if (request.getSimpleUserStories() == null || request.getSimpleUserStories().isEmpty()) {
                 return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)

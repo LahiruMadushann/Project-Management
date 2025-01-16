@@ -1,6 +1,7 @@
 package com.project_management.controllers;
 
 import com.project_management.dto.ReleaseVersionDTO;
+import com.project_management.security.utils.SecurityUtil;
 import com.project_management.services.ReleaseVersionService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,7 @@ public class ReleaseVersionController {
     @PostMapping
     public ResponseEntity<?> createReleaseVersion(@RequestBody ReleaseVersionDTO releaseVersionDTO) {
         try {
+            releaseVersionDTO.setCreateUserId(SecurityUtil.getCurrentUserId());
             ReleaseVersionDTO createdReleaseVersion = releaseVersionService.createReleaseVersion(releaseVersionDTO);
             return new ResponseEntity<>(createdReleaseVersion, HttpStatus.CREATED);
         } catch (NoSuchElementException e) {
@@ -73,6 +75,7 @@ public class ReleaseVersionController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateReleaseVersion(@PathVariable Long id, @RequestBody ReleaseVersionDTO releaseVersionDTO) {
         try {
+            releaseVersionDTO.setCreateUserId(SecurityUtil.getCurrentUserId());
             ReleaseVersionDTO updatedReleaseVersion = releaseVersionService.updateReleaseVersion(id, releaseVersionDTO);
             return ResponseEntity.ok(updatedReleaseVersion);
         } catch (NoSuchElementException | EntityNotFoundException e) {

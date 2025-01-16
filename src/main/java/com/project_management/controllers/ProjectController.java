@@ -1,6 +1,7 @@
 package com.project_management.controllers;
 
 import com.project_management.dto.ProjectDTO;
+import com.project_management.security.utils.SecurityUtil;
 import com.project_management.services.ProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,7 @@ public class ProjectController {
     @PostMapping
     public ResponseEntity<?> createProject(@RequestBody ProjectDTO projectDTO) {
         try {
+            projectDTO.setId(SecurityUtil.getCurrentUserId());
             ProjectDTO createdProject = projectService.createProject(projectDTO);
             return new ResponseEntity<>(createdProject, HttpStatus.CREATED);
         } catch (RuntimeException e) {
@@ -56,6 +58,7 @@ public class ProjectController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateProject(@PathVariable Long id, @RequestBody ProjectDTO projectDTO) {
         try {
+            projectDTO.setId(SecurityUtil.getCurrentUserId());
             ProjectDTO updatedProject = projectService.updateProject(id, projectDTO);
             return ResponseEntity.ok(updatedProject);
         } catch (NoSuchElementException e) {
