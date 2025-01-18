@@ -1,5 +1,6 @@
 package com.project_management.controllers;
 
+import com.project_management.dto.ResourceDTO;
 import com.project_management.models.Resource;
 import com.project_management.services.ResourceService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,13 +28,19 @@ public class ResourceController {
     }
 
     @PostMapping
-    public ResponseEntity<Resource> createResource(@RequestBody Resource resource) {
+    public ResponseEntity<Resource> createResource(@RequestBody ResourceDTO resource) {
         Resource createdResource = resourceService.createResource(resource);
         return ResponseEntity.status(201).body(createdResource);
     }
 
+    @PostMapping("/bulk")
+    public ResponseEntity<List<Resource>> bulkSave(@RequestBody List<ResourceDTO> list) {
+        List<Resource> createdResource = resourceService.bulkSave(list);
+        return ResponseEntity.status(201).body(createdResource);
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<Resource> updateResource(@PathVariable Long id, @RequestBody Resource resource) {
+    public ResponseEntity<Resource> updateResource(@PathVariable Long id, @RequestBody ResourceDTO resource) {
         Resource updatedResource = resourceService.updateResource(id, resource);
         return ResponseEntity.ok(updatedResource);
     }
