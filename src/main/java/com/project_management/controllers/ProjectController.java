@@ -21,7 +21,7 @@ public class ProjectController {
     @PostMapping
     public ResponseEntity<?> createProject(@RequestBody ProjectDTO projectDTO) {
         try {
-            projectDTO.setId(SecurityUtil.getCurrentUserId());
+            projectDTO.setCreateUserId(SecurityUtil.getCurrentUserId());
             ProjectDTO createdProject = projectService.createProject(projectDTO);
             return new ResponseEntity<>(createdProject, HttpStatus.CREATED);
         } catch (RuntimeException e) {
