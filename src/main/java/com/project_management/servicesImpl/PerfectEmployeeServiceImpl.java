@@ -96,7 +96,7 @@ public class PerfectEmployeeServiceImpl implements PerfectEmployeeService {
         PerfectEmployee entity = new PerfectEmployee();
         entity.setEmployeeId(dto.getEmployeeId());
         entity.setRoleName(dto.getRoleName());
-
+        entity.setRoleCategory(dto.getRoleCategory());
         List<PerfectEmployeeSkill> skills = dto.getSkills().stream()
                 .map(skillDto -> {
                     PerfectEmployeeSkill skill = convertSkillToEntity(skillDto);
@@ -131,6 +131,7 @@ public class PerfectEmployeeServiceImpl implements PerfectEmployeeService {
         PerfectEmployeeDTO dto = new PerfectEmployeeDTO();
         dto.setEmployeeId(entity.getEmployeeId());
         dto.setRoleName(entity.getRoleName());
+        dto.setRoleCategory(entity.getRoleCategory());
         dto.setCreatedByUserId(entity.getCreatedBy().getId());
 
         dto.setSkills(entity.getSkills().stream().map(this::convertSkillToDTO).collect(Collectors.toList()));

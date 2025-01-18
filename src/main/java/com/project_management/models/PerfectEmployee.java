@@ -1,5 +1,6 @@
 package com.project_management.models;
 
+import com.project_management.models.enums.RoleCategory;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -19,6 +20,10 @@ public class PerfectEmployee {
 
     @Column(name = "p_role_name", nullable = false)
     private String roleName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "p_role_category", nullable = false)
+    private RoleCategory roleCategory;
 
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PerfectEmployeeSkill> skills;
