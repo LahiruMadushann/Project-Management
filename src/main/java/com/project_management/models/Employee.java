@@ -27,7 +27,7 @@ public class Employee {
     private String roleName;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "e_role_category", nullable = false)
+    @Column(name = "e_role_category", nullable = true)
     private RoleCategory roleCategory;
 
     @Column(name = "seniority", nullable = false)

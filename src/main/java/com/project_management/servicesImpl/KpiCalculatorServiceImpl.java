@@ -49,7 +49,11 @@ public class KpiCalculatorServiceImpl implements KpiService {
         List<PerfectEmployee> perfectEmployees = perfectEmployeeRepository.findAll();
 
         Map<String, PerfectEmployee> perfectEmployeeMap = perfectEmployees.stream()
-                .collect(Collectors.toMap(PerfectEmployee::getRoleName, pe -> pe));
+                .collect(Collectors.toMap(
+                        PerfectEmployee::getRoleName,
+                        pe -> pe,
+                        (existing, replacement) -> existing
+                ));
 
         return employees.stream()
                 .map(employee -> calculateKpiForEmployee(employee, perfectEmployeeMap))
@@ -91,6 +95,7 @@ public class KpiCalculatorServiceImpl implements KpiService {
         kpiDTO.setEmployeeId(employee.getEmployeeId());
         kpiDTO.setEmployeeName(employee.getEmployeeName());
         kpiDTO.setRoleName(employee.getRoleName());
+        kpiDTO.setRoleCategory(employee.getRoleCategory());
         kpiDTO.setDomain(employee.getDomain());
         kpiDTO.setOverallKpi(overallKpi);
         kpiDTO.setSkillKpi(skillKpi);
