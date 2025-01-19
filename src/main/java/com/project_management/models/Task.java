@@ -1,5 +1,6 @@
 package com.project_management.models;
 
+import com.project_management.models.enums.RoleCategory;
 import com.project_management.models.enums.TaskStatus;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -24,6 +25,9 @@ public class Task {
 
     @Column(name = "create_user_id", nullable = false)
     private Long createUserId;
+
+    @Column(name = "t_role_category", nullable = false)
+    private RoleCategory roleCategory;
 
     @ManyToOne
     @JoinColumn(name = "assigned_user_id")
