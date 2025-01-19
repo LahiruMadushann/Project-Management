@@ -78,15 +78,30 @@ public class KpiCalculatorServiceImpl implements KpiService {
         double educationKpi = 0;
         double experienceKpi = 0;
 
+        double skillWeight = 0;
+        double educationWeight = 0;
+        double experienceWeight = 0;
+        double totalWeight = 0;
+
         if (perfectEmployee != null) {
-            skillKpi = calculateCategoryKpi(employee.getSkills(), perfectEmployee.getSkills());
-            educationKpi = calculateCategoryKpi(employee.getEducations(), perfectEmployee.getEducations());
-            experienceKpi = calculateCategoryKpi(employee.getExperiences(), perfectEmployee.getExperiences());
+            skillWeight = calculateWeight(employee.getSkills(), perfectEmployee.getSkills());
+            educationWeight = calculateWeight(employee.getEducations(), perfectEmployee.getEducations());
+            experienceWeight = calculateWeight(employee.getExperiences(), perfectEmployee.getExperiences());
+            totalWeight = skillWeight + educationWeight + experienceWeight;
+
+            skillKpi = (calculateCategoryKpi(employee.getSkills(), perfectEmployee.getSkills())) * ((skillWeight/totalWeight) * 100);
+            educationKpi = (calculateCategoryKpi(employee.getEducations(), perfectEmployee.getEducations())) * ((educationWeight/totalWeight) * 100);
+            experienceKpi = (calculateCategoryKpi(employee.getExperiences(), perfectEmployee.getExperiences())) * ((experienceWeight/totalWeight) * 100);
         } else {
             // If no perfect employee is found, use default weights and max points
-            skillKpi = calculateDefaultCategoryKpi(employee.getSkills());
-            educationKpi = calculateDefaultCategoryKpi(employee.getEducations());
-            experienceKpi = calculateDefaultCategoryKpi(employee.getExperiences());
+            skillWeight = calculateDefaultWeight(employee.getSkills());
+            educationWeight = calculateDefaultWeight(employee.getEducations());
+            experienceWeight = calculateDefaultWeight(employee.getExperiences());
+            totalWeight = skillWeight + educationWeight + experienceWeight;
+
+            skillKpi = (calculateDefaultCategoryKpi(employee.getSkills())) * ((skillWeight/totalWeight) * 100);
+            educationKpi = (calculateDefaultCategoryKpi(employee.getEducations())) * ((educationWeight/totalWeight) * 100);
+            experienceKpi = (calculateDefaultCategoryKpi(employee.getExperiences())) * ((experienceWeight/totalWeight) * 100);
         }
 
         double overallKpi = (skillKpi + educationKpi + experienceKpi);
@@ -118,11 +133,20 @@ public class KpiCalculatorServiceImpl implements KpiService {
                     String name = entry.getKey();
                     PerfectAttributeInfo perfectInfo = entry.getValue();
                     Integer employeePoints = employeeAttributeMap.getOrDefault(name, 0);
-                    return (double) employeePoints / perfectInfo.getPoints() * perfectInfo.getWeight();
+                    return (double) employeePoints / perfectInfo.getPoints();
                 })
                 .sum();
 
         return weightedSum / totalWeight;
+    }
+
+    private <T, P> double calculateWeight(List<T> employeeAttributes, List<P> perfectAttributes) {
+        Map<String, Integer> employeeAttributeMap = createAttributeMap(employeeAttributes);
+        Map<String, PerfectAttributeInfo> perfectAttributeMap = createPerfectAttributeMap(perfectAttributes);
+
+        return perfectAttributeMap.values().stream()
+                .mapToDouble(PerfectAttributeInfo::getWeight)
+                .sum();
     }
 
     private <T> double calculateDefaultCategoryKpi(List<T> employeeAttributes) {
@@ -130,8 +154,11 @@ public class KpiCalculatorServiceImpl implements KpiService {
                 .mapToInt(this::getAttributePoints)
                 .sum();
 
-        int maxPossiblePoints = employeeAttributes.size() * 10; // Assuming max points is 10 for each attribute
-        return (double) totalPoints / maxPossiblePoints;
+//        int maxPossiblePoints = employeeAttributes.size() * 10; // Assuming max points is 10 for each attribute
+        return (double) totalPoints;
+    }
+    private <T> double calculateDefaultWeight(List<T> employeeAttributes) {
+        return (double) 100 /3;
     }
 
     private <T> Map<String, Integer> createAttributeMap(List<T> attributes) {
