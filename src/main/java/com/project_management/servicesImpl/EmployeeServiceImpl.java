@@ -44,6 +44,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setEmployeeName(employeeDTO.getEmployeeName());
         employee.setSeniority(employeeDTO.getSeniority());
         employee.setRoleName(employeeDTO.getRoleName());
+        employee.setRoleCategory(employeeDTO.getRoleCategory());
         employee.setCreatedBy(currentUser);
         employee.setUser(associatedUser);;
         employee.setMaximumAssessedCount(employeeDTO.getMaximumAssessedCount());
@@ -76,6 +77,10 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
         if (employeeDTO.getRoleName() != null) {
             employee.setRoleName(employeeDTO.getRoleName());
+        }
+
+        if (employeeDTO.getRoleCategory() != null) {
+            employee.setRoleCategory(employeeDTO.getRoleCategory());
         }
 
         if (employeeDTO.getMaximumAssessedCount() != null) {
@@ -218,6 +223,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         dto.setEmployeeName(employee.getEmployeeName());
         dto.setSeniority(employee.getSeniority());
         dto.setRoleName(employee.getRoleName());
+        dto.setRoleCategory(employee.getRoleCategory());
         dto.setCreatedByUsername(employee.getCreatedBy().getUsername());
         dto.setUserId(employee.getUser().getId());
         dto.setMaximumAssessedCount(employee.getMaximumAssessedCount());

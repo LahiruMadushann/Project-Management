@@ -26,7 +26,8 @@ public class Task {
     @Column(name = "create_user_id", nullable = false)
     private Long createUserId;
 
-    @Column(name = "t_role_category", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "t_role_category", nullable = true)
     private RoleCategory roleCategory;
 
     @ManyToOne

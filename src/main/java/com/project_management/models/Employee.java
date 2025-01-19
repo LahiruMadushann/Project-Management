@@ -1,6 +1,7 @@
 package com.project_management.models;
 
 import com.project_management.models.enums.Domain;
+import com.project_management.models.enums.RoleCategory;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -24,6 +25,10 @@ public class Employee {
 
     @Column(name = "role_name", nullable = false)
     private String roleName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "e_role_category", nullable = false)
+    private RoleCategory roleCategory;
 
     @Column(name = "seniority", nullable = false)
     private String seniority;

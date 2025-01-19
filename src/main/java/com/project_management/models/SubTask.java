@@ -1,5 +1,6 @@
 package com.project_management.models;
 
+import com.project_management.models.enums.RoleCategory;
 import com.project_management.models.enums.TaskStatus;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -33,6 +34,10 @@ public class SubTask {
     private TaskStatus status;
 
     private String tags;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "st_role_category", nullable = true)
+    private RoleCategory roleCategory;
 
     @Column(name = "assigned_date")
     private LocalDate assignedDate;

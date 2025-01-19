@@ -1,6 +1,7 @@
 package com.project_management.dto;
 
 import com.project_management.models.enums.Domain;
+import com.project_management.models.enums.RoleCategory;
 import lombok.Data;
 
 import java.util.List;
@@ -11,6 +12,7 @@ public class EmployeeDTO {
     private String employeeName;
     private String seniority;
     private String roleName;
+    private RoleCategory roleCategory;
     private String createdByUsername;
     private List<EmployeeSkillDTO> skills;
     private List<EmployeeExperienceDTO> experiences;
