@@ -137,7 +137,7 @@ public class KpiCalculatorServiceImpl implements KpiService {
                 })
                 .sum();
 
-        return weightedSum / totalWeight;
+        return weightedSum ;
     }
 
     private <T, P> double calculateWeight(List<T> employeeAttributes, List<P> perfectAttributes) {
