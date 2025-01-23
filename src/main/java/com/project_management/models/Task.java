@@ -1,5 +1,6 @@
 package com.project_management.models;
 
+import com.project_management.models.enums.PriorityLevel;
 import com.project_management.models.enums.RoleCategory;
 import com.project_management.models.enums.TaskStatus;
 import jakarta.persistence.*;
@@ -62,5 +63,9 @@ public class Task {
 
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL)
     private List<SubTask> subTasks;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "priority_level", nullable = false)
+    private PriorityLevel priorityLevel = PriorityLevel.MEDIUM;
 
 }

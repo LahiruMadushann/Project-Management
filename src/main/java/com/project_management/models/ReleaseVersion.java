@@ -1,5 +1,6 @@
 package com.project_management.models;
 
+import com.project_management.models.constant.PriorityValue;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
@@ -34,5 +35,12 @@ public class ReleaseVersion {
 
     @OneToMany(mappedBy = "releaseVersion", cascade = CascadeType.ALL)
     private List<Task> tasks;
+
+    @Column(name = "version_limit_constant", nullable = false)
+    private int versionLimitConstant = PriorityValue.PRIORITY_VALUE;
+
+    public void reduceLimit(int difficultyLevel) {
+        this.versionLimitConstant = Math.max(0, this.versionLimitConstant - difficultyLevel);
+    }
 }
 
