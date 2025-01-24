@@ -238,6 +238,8 @@ public class TaskCreationFromMLService {
     public List<TaskDTO> createTasksFromStories(CreateTasksFromStoriesRequest request) {
         try {
             // Create request body exactly matching Python API expectations
+            if(request.getDifficultyLevel() == null) request.setDifficultyLevel(3);
+
             Map<String, List<Map<String, String>>> mlRequest = new HashMap<>();
             List<Map<String, String>> stories = request.getSimpleUserStories().stream()
                     .map(story -> {

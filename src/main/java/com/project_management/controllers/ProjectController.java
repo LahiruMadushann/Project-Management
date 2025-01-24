@@ -84,6 +84,20 @@ public class ProjectController {
         }
     }
 
+    @PutMapping("/{projectId}/status")
+    public ResponseEntity<?> updateProjectStatus(@PathVariable Long projectId, @RequestParam String status) {
+        try {
+            ProjectDTO updatedProject = projectService.updateProjectStatus(projectId, status);
+            return ResponseEntity.ok(updatedProject);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return handleException(e);
+        }
+    }
+
     private ResponseEntity<String> handleException(Exception e) {
         e.printStackTrace();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred: " + e.getMessage());
