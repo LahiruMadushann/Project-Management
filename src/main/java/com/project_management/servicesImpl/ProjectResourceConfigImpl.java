@@ -6,6 +6,8 @@ import com.project_management.services.ProjectResourceConfigService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class ProjectResourceConfigImpl  implements ProjectResourceConfigService {
 
@@ -18,7 +20,7 @@ public class ProjectResourceConfigImpl  implements ProjectResourceConfigService 
     }
 
     @Override
-    public ProjectResourceConfig getConfigByProject(long id) {
-        return projectResourceConfigRepository.findByProjectId(id);
+    public List<ProjectResourceConfig> getConfigByProject(long id) {
+        return projectResourceConfigRepository.findAllByProjectId(id);
     }
 }

@@ -1,9 +1,12 @@
 package com.project_management.controllers;
 
+import com.project_management.dto.ResourceCatalogDto;
 import com.project_management.dto.ResourceDTO;
 import com.project_management.dto.ResourceMLRequestDTO;
 import com.project_management.dto.ResourceMLResponseDTO;
+import com.project_management.models.ProjectResourceConfig;
 import com.project_management.models.Resource;
+import com.project_management.repositories.ProjectResourceConfigRepository;
 import com.project_management.services.ResourceService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Collections;
 import java.util.List;
 
 @Slf4j
@@ -22,6 +26,9 @@ public class ResourceController {
 
     @Autowired
     private ResourceService resourceService;
+
+    @Autowired
+    private ProjectResourceConfigRepository projectResourceConfigRepository;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -64,9 +71,12 @@ public class ResourceController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/predict")
-    public ResponseEntity<ResourceMLResponseDTO> predictResources(@RequestBody ResourceMLRequestDTO requestDto) {
+    @PostMapping("/predict/{projectId}")
+    public ResponseEntity<ResourceMLResponseDTO> predictResources(
+            @PathVariable Long projectId,
+            @RequestBody ResourceMLRequestDTO requestDto) {
         try {
+            System.out.println("in method");
             // Log the request
             log.debug("Sending request to ML service: {}", requestDto);
 
@@ -89,14 +99,35 @@ public class ResourceController {
                         mlResponse.getStatusCode());
             }
 
+            // Save the response to the database
+            ResourceMLResponseDTO responseDTO = mlResponse.getBody();
+            ProjectResourceConfig projectResourceConfig = new ProjectResourceConfig();
+            projectResourceConfig.setProjectId(projectId);
+            projectResourceConfig.setCloud(responseDTO.getResourceCloud().isPrediction());
+            projectResourceConfig.setDb(responseDTO.getResourceDB().isPrediction());
+            projectResourceConfig.setAutomation(responseDTO.getResourceAutomation().isPrediction());
+            projectResourceConfig.setSecurity(responseDTO.getResourceSecurity().isPrediction());
+            projectResourceConfig.setCollaboration(responseDTO.getResourceCollaboration().isPrediction());
+            projectResourceConfig.setIde(responseDTO.getResourceIdeTools().isPrediction());
+
+            // Save using JPA repository
+            projectResourceConfigRepository.save(projectResourceConfig);
+
+
             return mlResponse;
 
         } catch (HttpStatusCodeException e) {
-            log.error("ML service error response: {}", e.getResponseBodyAsString());
+            System.out.println("ML service error response: {}" + e.getResponseBodyAsString());
             throw new RuntimeException("ML service error: " + e.getMessage(), e);
         } catch (Exception e) {
-            log.error("Error calling ML service: ", e);
+            System.out.println("Error calling ML service: "+ e);
             throw new RuntimeException("Failed to process resource prediction: " + e.getMessage(), e);
         }
+    }
+
+    @GetMapping("/catalog")
+    public ResponseEntity<List<Resource>> getResourcesByBudget(@RequestBody ResourceCatalogDto dto){
+        List<Resource> list = resourceService.predictResourcesByCategory(dto);
+        return ResponseEntity.ok(list);
     }
 }

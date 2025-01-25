@@ -15,6 +15,7 @@ public class Resource {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    private String name;
     @Enumerated(EnumType.STRING)
     private BudgetTiers tier;
     private Double monthlyCostFloor;
