@@ -1,5 +1,6 @@
 package com.project_management.dto;
 
+import com.project_management.models.enums.ProjectStatus;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -14,4 +15,5 @@ public class ProjectDTO {
     private BigDecimal budget;
     private LocalDate deadline;
     private Long createUserId;
+    private ProjectStatus status;
 }

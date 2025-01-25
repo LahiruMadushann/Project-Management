@@ -1,7 +1,9 @@
 package com.project_management.controllers;
 
 import com.project_management.dto.PerfectEmployeeDTO;
+import com.project_management.models.PerfectEmployee;
 import com.project_management.models.PerfectRole;
+import com.project_management.models.enums.RoleCategory;
 import com.project_management.security.jwt.JwtTokenProvider;
 import com.project_management.services.PerfectEmployeeService;
 import com.project_management.services.PerfectRoleService;
@@ -12,8 +14,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/perfect-employees")
@@ -106,6 +110,19 @@ public class PerfectEmployeeController {
         }
     }
 
+    @GetMapping("/category/{roleCategory}/roles")
+    public ResponseEntity<?> getRolesByCategory(@PathVariable RoleCategory roleCategory) {
+        try {
+            List<String> roles = perfectRoleService.getAllRolesCategory(roleCategory)
+                    .stream()
+                    .map(PerfectEmployee::getRoleName)
+                    .distinct()
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(roles);
+        } catch (Exception e) {
+            return handleException(e);
+        }
+    }
     private String getTokenFromRequest() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getCredentials() instanceof String) {

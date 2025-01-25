@@ -1,5 +1,7 @@
 package com.project_management.models;
 
+import com.project_management.models.enums.PriorityLevel;
+import com.project_management.models.enums.RoleCategory;
 import com.project_management.models.enums.TaskStatus;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -24,6 +26,10 @@ public class Task {
 
     @Column(name = "create_user_id", nullable = false)
     private Long createUserId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "t_role_category", nullable = true)
+    private RoleCategory roleCategory;
 
     @ManyToOne
     @JoinColumn(name = "assigned_user_id")
@@ -57,5 +63,9 @@ public class Task {
 
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL)
     private List<SubTask> subTasks;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "priority_level", nullable = false)
+    private PriorityLevel priorityLevel = PriorityLevel.MEDIUM;
 
 }

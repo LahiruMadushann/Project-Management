@@ -20,7 +20,7 @@ public class FindTeamController {
     @Autowired
     private TeamService teamService;
 
-    @PostMapping("/find")
+    @GetMapping("/find")
     public ResponseEntity<?> getTeam(@RequestBody FindTeamDTO findTeamDTO) {
         try {
             List<TeamAssignment> assignedTeam = teamService.findAndAssignTeam(findTeamDTO);

@@ -1,6 +1,7 @@
 package com.project_management.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.project_management.models.enums.PriorityLevel;
 import lombok.Data;
 
 import java.util.List;
@@ -13,4 +14,6 @@ public class TaskDetail {
     private List<SubTaskDetail> subtasks;
     @JsonProperty("task_name")
     private String taskName;
+    @JsonProperty("priority_level")
+    private PriorityLevel priorityLevel;
 }

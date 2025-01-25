@@ -1,5 +1,6 @@
 package com.project_management.models;
 
+import com.project_management.models.enums.ProjectStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
@@ -34,4 +35,8 @@ public class Project {
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL)
     private List<ReleaseVersion> releaseVersions;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private ProjectStatus status;
 }

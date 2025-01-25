@@ -21,7 +21,7 @@ public class ProjectController {
     @PostMapping
     public ResponseEntity<?> createProject(@RequestBody ProjectDTO projectDTO) {
         try {
-            projectDTO.setId(SecurityUtil.getCurrentUserId());
+            projectDTO.setCreateUserId(SecurityUtil.getCurrentUserId());
             ProjectDTO createdProject = projectService.createProject(projectDTO);
             return new ResponseEntity<>(createdProject, HttpStatus.CREATED);
         } catch (RuntimeException e) {
@@ -75,6 +75,20 @@ public class ProjectController {
         try {
             projectService.deleteProject(id);
             return ResponseEntity.noContent().build();
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return handleException(e);
+        }
+    }
+
+    @PutMapping("/{projectId}/status")
+    public ResponseEntity<?> updateProjectStatus(@PathVariable Long projectId, @RequestParam String status) {
+        try {
+            ProjectDTO updatedProject = projectService.updateProjectStatus(projectId, status);
+            return ResponseEntity.ok(updatedProject);
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (RuntimeException e) {

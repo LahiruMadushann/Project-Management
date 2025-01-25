@@ -2,6 +2,7 @@ package com.project_management.servicesImpl;
 
 import com.project_management.dto.*;
 import com.project_management.models.*;
+import com.project_management.models.enums.PriorityLevel;
 import com.project_management.models.enums.TaskStatus;
 import com.project_management.repositories.EmployeeRepository;
 import com.project_management.repositories.ReleaseVersionRepository;
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,28 +55,38 @@ public class TaskServiceImpl implements TaskService {
                     projectId
             );
 
-            Employee selectedEmployee;
-            if (!exactMatches.isEmpty()) {
-                // If there are exact matches, randomly select one to distribute work evenly
-                int randomIndex = (int) (Math.random() * exactMatches.size());
-                selectedEmployee = exactMatches.get(randomIndex);
-            } else {
-                // If no exact matches, find the closest match
-                List<Employee> closestMatches = employeeRepository.findClosestMatchEmployees(
-                        taskDTO.getDifficultyLevel(),
-                        projectId
-                );
+            Optional<Employee> selectedEmployee = employeeRepository.findByUserId(taskDTO.getAssignedUserId());
 
+//            Employee selectedEmployee;
+//            if (!exactMatches.isEmpty()) {
+//                // If there are exact matches, randomly select one to distribute work evenly
+//                int randomIndex = (int) (Math.random() * exactMatches.size());
+//                selectedEmployee = exactMatches.get(randomIndex);
+//            } else {
+//                // If no exact matches, find the closest match
+//                List<Employee> closestMatches = employeeRepository.findClosestMatchEmployees(
+//                        taskDTO.getDifficultyLevel(),
+//                        projectId
+//                );
+//
 //                if (closestMatches.isEmpty()) {
 //                    throw new NoSuchElementException("No suitable employees found for this task");
 //                }
 //
 //                selectedEmployee = closestMatches.get(0); // Get the closest match
+//            }
+            if (selectedEmployee.isPresent()) {
+                User assignedUser = selectedEmployee.get().getUser();
+                task.setAssignedUser(assignedUser);
+                task.setAssignedDate(LocalDate.now());
+                task.setPriorityLevel(PriorityLevel.MEDIUM);
+            } else {
+                User assignedUser = null;
+                task.setAssignedUser(assignedUser);
+                task.setAssignedDate(LocalDate.now());
+                task.setPriorityLevel(PriorityLevel.MEDIUM);
             }
 
-//            User assignedUser = selectedEmployee.getUser();
-//            task.setAssignedUser(assignedUser);
-            task.setAssignedDate(LocalDate.now());
         }
 
         task.setReleaseVersion(releaseVersion);

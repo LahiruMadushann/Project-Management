@@ -1,15 +1,12 @@
 package com.project_management.servicesImpl;
 
 import com.project_management.dto.*;
-import com.project_management.models.ReleaseVersion;
-import com.project_management.models.SubTask;
-import com.project_management.models.Task;
-import com.project_management.models.User;
+import com.project_management.models.*;
+import com.project_management.models.constant.PriorityValue;
+import com.project_management.models.enums.PriorityLevel;
+import com.project_management.models.enums.RoleCategory;
 import com.project_management.models.enums.TaskStatus;
-import com.project_management.repositories.ReleaseVersionRepository;
-import com.project_management.repositories.SubTaskRepository;
-import com.project_management.repositories.TaskRepository;
-import com.project_management.repositories.UserRepository;
+import com.project_management.repositories.*;
 import com.project_management.services.TaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,10 +19,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,6 +31,9 @@ public class TaskCreationFromMLService {
 
     @Autowired
     private TaskRepository taskRepository;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
 
     @Autowired
     private SubTaskRepository subTaskRepository;
@@ -53,13 +50,13 @@ public class TaskCreationFromMLService {
     @Autowired
     private RestTemplate restTemplate;
 
+    // TaskCreationFromMLService.java
     @Transactional
     public List<TaskDTO> createTasksFromMLAnalysis(
             MLAnalysisResponse mlAnalysis,
             Long releaseVersionId,
             Long createUserId,
             Integer difficultyLevel,
-            Long assignedUserId,
             LocalDate assignedDate,
             LocalDate startDate,
             LocalDate deadline,
@@ -73,37 +70,119 @@ public class TaskCreationFromMLService {
         User createUser = userRepository.findById(createUserId)
                 .orElseThrow(() -> new RuntimeException("Create User not found"));
 
-        User assignedUser = userRepository.findById(assignedUserId)
-                .orElseThrow(() -> new RuntimeException("Assigned User not found"));
+        // Sort tasks by priority
+        List<TaskDetail> allTaskDetails = mlAnalysis.getResults().stream()
+                .flatMap(taskBreakdown -> taskBreakdown.getTasks().stream())
+                .sorted(Comparator.comparing(taskDetail -> {
+                    if (taskDetail.getPriorityLevel() == null) {
+                        return PriorityLevel.MEDIUM; // Default priority
+                    }
+                    return taskDetail.getPriorityLevel();
+                }, Comparator.nullsFirst(Comparator.reverseOrder()))) // HIGH -> MEDIUM -> LOW
+                .collect(Collectors.toList());
 
-        for (TaskBreakdown taskBreakdown : mlAnalysis.getResults()) {
-            for (TaskDetail taskDetail : taskBreakdown.getTasks()) {
-                // Create main task
-                Task mainTask = new Task();
-                mainTask.setName(taskDetail.getTaskName());
-                mainTask.setStatus(TaskStatus.TODO);
-                mainTask.setTags(taskBreakdown.getMainTask());
-                mainTask.setReleaseVersion(releaseVersion);
-                mainTask.setCreateUserId(createUser.getId());
-                mainTask.setDifficultyLevel(difficultyLevel);
-                mainTask.setAssignedUser(assignedUser);
-                mainTask.setAssignedDate(assignedDate);
-                mainTask.setStartDate(startDate);
-                mainTask.setDeadline(deadline);
-                mainTask.setCompletedDate(completedDate);
-                mainTask.setCreatedAt(LocalDateTime.now());
-                mainTask.setUpdatedAt(LocalDateTime.now());
+        Set<Long> assignedUsers = new HashSet<>();
+        for (TaskDetail taskDetail : allTaskDetails) {
+            if (releaseVersion.getVersionLimitConstant() == 0) {
+                // Create a new release version if the limit is reached
+                releaseVersion = createNewReleaseVersion(releaseVersion, createUserId);
+            }
+            Long projectId = releaseVersion.getProject().getId();
+            // Create main task
+            Task mainTask = new Task();
+            mainTask.setName(taskDetail.getTaskName());
+            mainTask.setStatus(TaskStatus.TODO);
+            mainTask.setReleaseVersion(releaseVersion);
+            mainTask.setCreateUserId(createUser.getId());
+            mainTask.setDifficultyLevel(difficultyLevel);
+            mainTask.setAssignedDate(assignedDate);
+            mainTask.setStartDate(startDate);
+            mainTask.setDeadline(deadline);
+            mainTask.setCompletedDate(completedDate);
+            mainTask.setCreatedAt(LocalDateTime.now());
+            mainTask.setUpdatedAt(LocalDateTime.now());
 
-                // Save the main task first
-                Task savedMainTask = taskRepository.save(mainTask);
+            // Set priority level
+            if (taskDetail.getPriorityLevel() == null) {
+                mainTask.setPriorityLevel(PriorityLevel.MEDIUM); // Default priority
+            } else {
+                mainTask.setPriorityLevel(taskDetail.getPriorityLevel());
+            }
 
-                // Create and save subtasks
-                List<SubTask> subtasks = new ArrayList<>();
-                for (SubTaskDetail subTaskDetail : taskDetail.getSubtasks()) {
-                    SubTask subTask = new SubTask();
-                    subTask.setName(subTaskDetail.getSubtaskName());
-                    subTask.setStatus(TaskStatus.TODO);
-                    subTask.setTags(subTaskDetail.getTag());
+            // Save the main task first
+            Task savedMainTask = taskRepository.save(mainTask);
+
+            // Create and save subtasks with role-based assignment
+            List<SubTask> subtasks = new ArrayList<>();
+            User mainTaskAssignedUser = null;
+            int maxSubtaskWeight = 0;
+
+            for (SubTaskDetail subTaskDetail : taskDetail.getSubtasks()) {
+                SubTask subTask = new SubTask();
+                subTask.setName(subTaskDetail.getSubtaskName());
+                subTask.setStatus(TaskStatus.TODO);
+
+                try {
+                    // Convert ML tag to RoleCategory
+                    String roleTag = subTaskDetail.getTag().trim().toLowerCase();
+                    RoleCategory requiredRole = RoleCategory.valueOf(roleTag);
+                    subTask.setTags(roleTag);
+
+                    // First, try to find employees with exact difficulty match and role
+                    List<Employee> exactMatches = employeeRepository.findTeamEmployees(projectId).stream()
+                            .filter(emp -> emp.getRoleCategory() == requiredRole &&
+                                    emp.getDifficultyLevel() == difficultyLevel &&
+                                    emp.getUser() != null && !assignedUsers.contains(emp.getUser().getId()))
+                            .collect(Collectors.toList());
+
+                    User assignedUser = null;
+                    Employee selectedEmployee = null;
+
+                    if (!exactMatches.isEmpty()) {
+                        // Randomly select from exact matches to distribute work
+                        selectedEmployee = exactMatches.get(new Random().nextInt(exactMatches.size()));
+                    } else {
+                        // If no exact matches, find closest match employees
+                        List<Employee> closestMatches = employeeRepository.findTeamEmployees(projectId).stream()
+                                .filter(emp -> emp.getRoleCategory() == requiredRole &&
+                                        emp.getUser() != null && !assignedUsers.contains(emp.getUser().getId()))
+                                .sorted(Comparator.comparingInt(emp ->
+                                        Math.abs(emp.getDifficultyLevel() - difficultyLevel)))
+                                .limit(5) // Take top 5 closest matches
+                                .collect(Collectors.toList());
+
+                        if (!closestMatches.isEmpty()) {
+                            selectedEmployee = closestMatches.get(0);
+                            log.info("No exact match found. Selected closest match for subtask '{}': employee '{}' with difficulty level {}",
+                                    subTaskDetail.getSubtaskName(),
+                                    selectedEmployee.getEmployeeName(),
+                                    selectedEmployee.getDifficultyLevel());
+                        } else {
+                            log.warn("No suitable employees found for subtask '{}' with role '{}'",
+                                    subTaskDetail.getSubtaskName(), requiredRole);
+                        }
+                    }
+
+                    // Assign user if an employee is found
+                    if (selectedEmployee != null) {
+                        assignedUser = selectedEmployee.getUser();
+
+                        // Track the user for main task assignment based on subtask complexity
+                        int subtaskWeight = (int) Math.ceil(subTaskDetail.getEstimatedHours());
+                        if (subtaskWeight > maxSubtaskWeight) {
+                            mainTaskAssignedUser = assignedUser;
+                            maxSubtaskWeight = subtaskWeight;
+                        }
+
+                        log.info("Assigned subtask '{}' to employee '{}' with role '{}'",
+                                subTaskDetail.getSubtaskName(),
+                                selectedEmployee.getEmployeeName(),
+                                selectedEmployee.getRoleCategory());
+
+                        // Add the user to the assigned set to avoid consecutive assignment
+                        assignedUsers.add(assignedUser.getId());
+                    }
+
                     subTask.setTask(savedMainTask);
                     subTask.setCreateUserId(createUserId);
                     subTask.setAssignedUser(assignedUser);
@@ -116,27 +195,51 @@ public class TaskCreationFromMLService {
                     subTask.setUpdatedAt(LocalDateTime.now());
 
                     subtasks.add(subTask);
+
+                } catch (IllegalArgumentException e) {
+                    log.error("Invalid role category from ML response: {}", subTaskDetail.getTag());
+                    throw new RuntimeException("Invalid role category: " + subTaskDetail.getTag());
                 }
-
-                // Save all subtasks
-                List<SubTask> savedSubtasks = subTaskRepository.saveAll(subtasks);
-                savedMainTask.setSubTasks(savedSubtasks);
-
-                // Save the updated main task with subtask references
-                Task finalSavedTask = taskRepository.save(savedMainTask);
-
-                // Convert to DTO and add to result list
-                createdTasks.add(convertTaskToDTO(finalSavedTask));
             }
+
+            // Assign main task to the user with the most complex subtask
+            savedMainTask.setAssignedUser(mainTaskAssignedUser);
+
+            // Save all subtasks
+            List<SubTask> savedSubtasks = subTaskRepository.saveAll(subtasks);
+            savedMainTask.setSubTasks(savedSubtasks);
+
+            // Save the updated main task
+            Task finalSavedTask = taskRepository.save(savedMainTask);
+            createdTasks.add(convertTaskToDTO(finalSavedTask));
+
+            // Reduce the version limit constant
+            releaseVersion.reduceLimit(difficultyLevel);
         }
 
         return createdTasks;
     }
 
+    // Create a new release version
+    private ReleaseVersion createNewReleaseVersion(ReleaseVersion oldVersion, Long createUserId) {
+        ReleaseVersion newVersion = new ReleaseVersion();
+        newVersion.setProject(oldVersion.getProject());
+        newVersion.setVersionName(oldVersion.getVersionName() + "-new-"+ LocalDateTime.now());
+        newVersion.setCreateUserId(createUserId);
+        newVersion.setCreatedAt(LocalDateTime.now());
+        newVersion.setUpdatedAt(LocalDateTime.now());
+        newVersion.setVersionDescription(oldVersion.getVersionDescription());
+        newVersion.setVersionLimitConstant(PriorityValue.PRIORITY_VALUE);
+        return releaseVersionRepository.save(newVersion);
+    }
+
+
     @Transactional
     public List<TaskDTO> createTasksFromStories(CreateTasksFromStoriesRequest request) {
         try {
             // Create request body exactly matching Python API expectations
+            if(request.getDifficultyLevel() == null) request.setDifficultyLevel(3);
+
             Map<String, List<Map<String, String>>> mlRequest = new HashMap<>();
             List<Map<String, String>> stories = request.getSimpleUserStories().stream()
                     .map(story -> {
@@ -178,7 +281,6 @@ public class TaskCreationFromMLService {
                     request.getReleaseVersionId(),
                     request.getCreateUserId(),
                     request.getDifficultyLevel(),
-                    request.getAssignedUserId(),
                     request.getAssignedDate(),
                     request.getStartDate(),
                     request.getDeadline(),
@@ -196,12 +298,15 @@ public class TaskCreationFromMLService {
 
 
 
+
 private TaskDTO convertTaskToDTO(Task task) {
         TaskDTO taskDTO = new TaskDTO();
         taskDTO.setId(task.getId());
         taskDTO.setName(task.getName());
         taskDTO.setStatus(task.getStatus());
         taskDTO.setTags(task.getTags());
+        //taskDTO.setRoleCategory(RoleCategory.valueOf(task.getTags()));
+    taskDTO.setPriorityLevel(task.getPriorityLevel());
         taskDTO.setReleaseVersionId(task.getReleaseVersion().getId());
         taskDTO.setCreateUserId(task.getCreateUserId());
         taskDTO.setDifficultyLevel(task.getDifficultyLevel());
@@ -230,6 +335,7 @@ private TaskDTO convertTaskToDTO(Task task) {
         subTaskDTO.setName(subTask.getName());
         subTaskDTO.setStatus(subTask.getStatus());
         subTaskDTO.setTags(subTask.getTags());
+        //subTaskDTO.setRoleCategory(RoleCategory.valueOf(subTask.getTags()));
         subTaskDTO.setCreateUserId(subTask.getCreateUserId());
         if (subTask.getAssignedUser() != null) {
             subTaskDTO.setAssignedUserId(subTask.getAssignedUser().getId());

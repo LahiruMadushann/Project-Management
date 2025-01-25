@@ -2,6 +2,7 @@ package com.project_management.servicesImpl;
 
 import com.project_management.dto.ProjectDTO;
 import com.project_management.models.Project;
+import com.project_management.models.enums.ProjectStatus;
 import com.project_management.repositories.ProjectRepository;
 import com.project_management.services.ProjectService;
 import org.springframework.beans.BeanUtils;
@@ -21,7 +22,9 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public ProjectDTO createProject(ProjectDTO projectDTO) {
         Project project = new Project();
+        projectDTO.setStatus(ProjectStatus.PENDING);
         BeanUtils.copyProperties(projectDTO, project);
+
         project.setCreatedAt(LocalDateTime.now());
         project.setUpdatedAt(LocalDateTime.now());
         Project savedProject = projectRepository.save(project);
@@ -60,6 +63,20 @@ public class ProjectServiceImpl implements ProjectService {
         }
         if (projectDTO.getDeadline() != null) {
             existingProject.setDeadline(projectDTO.getDeadline());
+        }
+
+        existingProject.setUpdatedAt(LocalDateTime.now());
+
+        Project updatedProject = projectRepository.save(existingProject);
+        return convertToDTO(updatedProject);
+    }
+
+    @Override
+    public ProjectDTO updateProjectStatus(Long projectId, String status) {
+        Project existingProject = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+        if (status != null) {
+            existingProject.setStatus(ProjectStatus.valueOf(status));
         }
 
         existingProject.setUpdatedAt(LocalDateTime.now());
