@@ -10,5 +10,6 @@ public interface PerfectRoleService {
     PerfectRole saveRole(String roleName);
     List<PerfectRole> getAllRoles();
     List<PerfectEmployee>  getAllRolesCategory(RoleCategory roleCategory);
+    String  getAllRolesById(String employeeId);
 }
 

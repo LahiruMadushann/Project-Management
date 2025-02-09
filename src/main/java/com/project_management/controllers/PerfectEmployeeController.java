@@ -123,6 +123,16 @@ public class PerfectEmployeeController {
             return handleException(e);
         }
     }
+
+    @GetMapping("/{employeeId}/roles")
+    public ResponseEntity<?> getRolesById(@PathVariable String employeeId) {
+        try {
+            String roles = perfectRoleService.getAllRolesById(employeeId);
+            return ResponseEntity.ok(roles);
+        } catch (Exception e) {
+            return handleException(e);
+        }
+    }
     private String getTokenFromRequest() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getCredentials() instanceof String) {

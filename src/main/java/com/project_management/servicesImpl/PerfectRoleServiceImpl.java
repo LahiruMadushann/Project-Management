@@ -43,4 +43,9 @@ public class PerfectRoleServiceImpl implements PerfectRoleService {
     public List<PerfectEmployee> getAllRolesCategory(RoleCategory roleCategory) {
         return perfectEmployeeRepository.findByRoleCategory(roleCategory);
     }
+
+    @Override
+    public String getAllRolesById(String employeeId) {
+        return perfectEmployeeRepository.findRolesByEmployeeId(employeeId);
+    }
 }

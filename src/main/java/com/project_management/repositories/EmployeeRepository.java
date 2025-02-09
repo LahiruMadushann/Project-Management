@@ -57,4 +57,7 @@ public interface EmployeeRepository extends JpaRepository<Employee, String> {
             @Param("roleCategory") RoleCategory roleCategory,
             @Param("difficultyLevel") Integer difficultyLevel
     );
+
+    @Query("SELECT e.roleName FROM Employee e WHERE e.employeeId = :employeeId")
+    String findRolesByEmployeeId(@Param("employeeId") String employeeId);
 }

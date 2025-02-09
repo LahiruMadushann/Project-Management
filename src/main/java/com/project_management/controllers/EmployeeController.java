@@ -91,4 +91,14 @@ public class EmployeeController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
         }
     }
+
+    @GetMapping("/{employeeId}/roles")
+    public ResponseEntity<?> getRolesById(@PathVariable String employeeId) {
+        try {
+            String roles = employeeService.getAllRolesById(employeeId);
+            return ResponseEntity.ok(roles);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
+        }
+    }
 }

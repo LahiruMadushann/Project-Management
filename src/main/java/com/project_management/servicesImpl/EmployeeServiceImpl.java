@@ -200,6 +200,10 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
+    @Override
+    public String getAllRolesById(String employeeId) {
+        return employeeRepository.findRolesByEmployeeId(employeeId);
+    }
 
     private String generateUniqueEmployeeId(String employeeName) {
         String baseId = employeeName.replaceAll("\\s+", "").toLowerCase();
