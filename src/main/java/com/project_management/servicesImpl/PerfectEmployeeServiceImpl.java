@@ -51,10 +51,27 @@ public class PerfectEmployeeServiceImpl implements PerfectEmployeeService {
         PerfectEmployee existingEmployee = perfectEmployeeRepository.findById(employeeId)
                 .orElseThrow(() -> new RuntimeException("Perfect Employee not found"));
 
-        updateEmployeeFromDTO(existingEmployee, perfectEmployeeDTO);
+        // Update basic fields
+        existingEmployee.setRoleName(perfectEmployeeDTO.getRoleName());
+        existingEmployee.setRoleCategory(perfectEmployeeDTO.getRoleCategory());
+
+        // Update educations
+        if (perfectEmployeeDTO.getEducations() != null) {
+            perfectEmployeeDTO.getEducations().forEach(eduDTO -> {
+                PerfectEmployeeEducation education = new PerfectEmployeeEducation();
+                education.setEmployee(existingEmployee);
+                education.setEducationName(eduDTO.getEducationName());
+                education.setEducationPoints(eduDTO.getEducationPoints());
+                education.setEducationWeight(eduDTO.getEducationWeight());
+                existingEmployee.getEducations().add(education);
+            });
+        }
+
+        // Save the role
         perfectRoleService.saveRole(perfectEmployeeDTO.getRoleName());
-        PerfectEmployee updatedEmployee = perfectEmployeeRepository.save(existingEmployee);
-        return convertToDTO(updatedEmployee);
+
+        // Save and return
+        return convertToDTO(perfectEmployeeRepository.save(existingEmployee));
     }
 
     @Override
