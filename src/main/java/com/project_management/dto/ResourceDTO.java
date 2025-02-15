@@ -9,6 +9,7 @@ import lombok.Data;
 public class ResourceDTO {
 
     private long id;
+    private String name;
     private String tier;
     private Double monthlyCostFloor;
     private Double monthlyCostCeiling;

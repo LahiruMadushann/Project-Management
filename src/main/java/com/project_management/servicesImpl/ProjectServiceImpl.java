@@ -9,6 +9,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,6 +45,16 @@ public class ProjectServiceImpl implements ProjectService {
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<ProjectDTO> getAllProjectsBudgetActive() {
+        return projectRepository.findAll().stream()
+                .filter(project -> project.getPredictedBudget() != null && project.getPredictedBudget().compareTo(BigDecimal.ZERO) > 0)
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+
 
     @Override
     public ProjectDTO updateProject(Long id, ProjectDTO projectDTO) {

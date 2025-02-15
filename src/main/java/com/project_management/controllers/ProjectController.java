@@ -55,6 +55,16 @@ public class ProjectController {
         }
     }
 
+    @GetMapping("/res/b_active")
+    public ResponseEntity<?> getAllProjectsBudgetActive() {
+        try {
+            List<ProjectDTO> projects = projectService.getAllProjectsBudgetActive();
+            return ResponseEntity.ok(projects);
+        } catch (Exception e) {
+            return handleException(e);
+        }
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updateProject(@PathVariable Long id, @RequestBody ProjectDTO projectDTO) {
         try {
@@ -84,8 +94,8 @@ public class ProjectController {
         }
     }
 
-    @PutMapping("/{projectId}/status")
-    public ResponseEntity<?> updateProjectStatus(@PathVariable Long projectId, @RequestParam String status) {
+    @PutMapping("/{projectId}/{status}")
+    public ResponseEntity<?> updateProjectStatus(@PathVariable Long projectId, @PathVariable(name = "status") String status) {
         try {
             ProjectDTO updatedProject = projectService.updateProjectStatus(projectId, status);
             return ResponseEntity.ok(updatedProject);
