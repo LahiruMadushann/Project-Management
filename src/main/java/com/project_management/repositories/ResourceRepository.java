@@ -13,6 +13,6 @@ import java.util.List;
 public interface ResourceRepository extends JpaRepository<Resource,Long> {
     List<Resource> findAllResourcesByResourceType(ResourceType type);
 
-    @Query("SELECT r FROM Resource r WHERE r.resourceType = :type AND r.monthlyCostFloor <= :budget AND r.monthlyCostCeiling >= :budget")
+    @Query("SELECT r FROM Resource r WHERE r.resourceType = :type AND r.EstimatedCostMonthly <= :budget")
     List<Resource> findResourcesByTypeAndBudget(@Param("type") ResourceType type, @Param("budget") Double budget);
 }

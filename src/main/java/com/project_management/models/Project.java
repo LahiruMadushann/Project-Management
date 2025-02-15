@@ -38,5 +38,7 @@ public class Project {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private ProjectStatus status;
+    private ProjectStatus status = ProjectStatus.PENDING;
+
+    private BigDecimal predictedBudget;
 }

@@ -2,6 +2,8 @@ package com.project_management.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
+
+import java.math.BigDecimal;
 import java.util.Map;
 
 @Data
@@ -24,6 +26,8 @@ public class ResourceMLResponseDTO {
 
     @JsonProperty("Resource_Security")
     private ResourcePrediction resourceSecurity;
+
+    private BigDecimal projectBudget;
 
     @Data
     public static class ResourcePrediction {

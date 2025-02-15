@@ -9,6 +9,7 @@ public interface ProjectService {
     ProjectDTO createProject(ProjectDTO projectDTO);
     ProjectDTO getProjectById(Long id);
     List<ProjectDTO> getAllProjects();
+    public List<ProjectDTO> getAllProjectsBudgetActive();
     ProjectDTO updateProject(Long id, ProjectDTO projectDTO);
     ProjectDTO updateProjectStatus(Long projectId, String status);
     void deleteProject(Long id);

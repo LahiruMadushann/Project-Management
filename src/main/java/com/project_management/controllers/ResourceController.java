@@ -6,7 +6,11 @@ import com.project_management.dto.ResourceMLRequestDTO;
 import com.project_management.dto.ResourceMLResponseDTO;
 import com.project_management.models.ProjectResourceConfig;
 import com.project_management.models.Resource;
+import com.project_management.models.enums.BudgetTiers;
+import com.project_management.models.enums.ResourceType;
+import com.project_management.repositories.ProjectRepository;
 import com.project_management.repositories.ProjectResourceConfigRepository;
+import com.project_management.services.ProjectService;
 import com.project_management.services.ResourceService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +22,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -29,6 +34,9 @@ public class ResourceController {
 
     @Autowired
     private ProjectResourceConfigRepository projectResourceConfigRepository;
+
+    @Autowired
+    private ProjectRepository projectRepository;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -101,6 +109,7 @@ public class ResourceController {
 
             // Save the response to the database
             ResourceMLResponseDTO responseDTO = mlResponse.getBody();
+            responseDTO.setProjectBudget(projectRepository.findById(projectId).get().getPredictedBudget());
             ProjectResourceConfig projectResourceConfig = new ProjectResourceConfig();
             projectResourceConfig.setProjectId(projectId);
             projectResourceConfig.setCloud(responseDTO.getResourceCloud().isPrediction());
@@ -126,8 +135,14 @@ public class ResourceController {
     }
 
     @GetMapping("/catalog")
-    public ResponseEntity<List<Resource>> getResourcesByBudget(@RequestBody ResourceCatalogDto dto){
-        List<Resource> list = resourceService.predictResourcesByCategory(dto);
+    public ResponseEntity<Map<ResourceType, Map<BudgetTiers, List<Resource>>>> getResourcesByBudget(@RequestBody ResourceCatalogDto dto){
+        Map<ResourceType, Map<BudgetTiers, List<Resource>>> list = resourceService.predictResourcesByCategory(dto);
+        return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("/catalog/list/{projectId}")
+    public ResponseEntity<List<Map<String, Object>>> getResourcesByBudgetProjectId(@PathVariable Long projectId){
+        List<Map<String, Object>> list = resourceService.getResourceMapsByProjectId(projectId);
         return ResponseEntity.ok(list);
     }
 }
