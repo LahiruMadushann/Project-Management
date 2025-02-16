@@ -12,19 +12,10 @@ public class Client {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long clientId;
 
-    @Column(name = "client_name", nullable = false)
-    private String clientName;
+    @Column(name = "project_id", nullable = false)
+    private Long projectId;
 
-    @Column(name = "password", nullable = false)
-    private String password;
+    @Column(name = "user_id", nullable = false)
+    private Integer userId;
 
-    @Column(name = "email", nullable = false)
-    private String email;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User createdBy;
-
-    @Column(name = "is_active", nullable = false)
-    private boolean isActive = true;
 }

@@ -1,14 +1,16 @@
 package com.project_management.dto;
 
+import jakarta.persistence.Column;
 import lombok.Data;
 
 @Data
 public class ClientDTO {
-    private Long clientId;
-    private String clientName;
-    private String email;
+    private String username;
     private String password;
-    private String createdByUsername;
-    private boolean isActive;
+    private String email;
+    private String roleName = "ROLE_CLIENT";
+    private Long clientId;
+    private Long projectId;
+    private Integer userId;
 }
 

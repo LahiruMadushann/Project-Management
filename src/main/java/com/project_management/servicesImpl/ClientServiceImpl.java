@@ -2,13 +2,16 @@ package com.project_management.servicesImpl;
 
 import com.project_management.dto.ClientDTO;
 import com.project_management.models.Client;
+import com.project_management.models.Role;
 import com.project_management.models.User;
 import com.project_management.repositories.ClientRepository;
+import com.project_management.repositories.RoleRepository;
 import com.project_management.repositories.UserRepository;
 import com.project_management.services.ClientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,17 +26,41 @@ public class ClientServiceImpl implements ClientService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     @Override
     public ClientDTO createClient(ClientDTO clientDTO) {
-        User currentUser = getCurrentUser();
 
+        if (userRepository.findByUsername(clientDTO.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists");
+        }
+
+        // Find role
+        Role role = roleRepository.findByName(clientDTO.getRoleName())
+                .orElseThrow(() -> new RuntimeException("Role not found"));
+
+        // Create new user
+        User newUser = new User();
+        newUser.setUsername(clientDTO.getUsername());
+        newUser.setPassword(passwordEncoder.encode(clientDTO.getPassword()));
+        newUser.setEmail(clientDTO.getEmail());
+        newUser.setRole(role);
+
+        // Save user
+        userRepository.save(newUser);
+        Integer userId = userRepository.findIdByUsername(clientDTO.getUsername());
+        clientDTO.setUserId(userId);
         Client client = new Client();
-        client.setClientName(clientDTO.getClientName());
-        client.setCreatedBy(currentUser);
-        client.setActive(true);
+        client.setProjectId(clientDTO.getProjectId());
+        client.setUserId(clientDTO.getUserId());
 
         Client savedClient = clientRepository.save(client);
-        return convertToDTO(savedClient);
+        clientDTO.setClientId(savedClient.getClientId());
+        return convertToDTO(clientDTO);
     }
 
     @Override
@@ -41,7 +68,8 @@ public class ClientServiceImpl implements ClientService {
         Client client = clientRepository.findById(clientId)
                 .orElseThrow(() -> new RuntimeException("Client not found"));
 
-        client.setClientName(clientDTO.getClientName());
+        client.setProjectId(clientDTO.getProjectId());
+        client.setUserId(clientDTO.getUserId());
 
         Client updatedClient = clientRepository.save(client);
         return convertToDTO(updatedClient);
@@ -70,7 +98,6 @@ public class ClientServiceImpl implements ClientService {
     public ClientDTO activateClient(Long clientId) {
         Client client = clientRepository.findById(clientId)
                 .orElseThrow(() -> new RuntimeException("Client not found"));
-        client.setActive(true);
         Client updatedClient = clientRepository.save(client);
         return convertToDTO(updatedClient);
     }
@@ -79,7 +106,6 @@ public class ClientServiceImpl implements ClientService {
     public ClientDTO deactivateClient(Long clientId) {
         Client client = clientRepository.findById(clientId)
                 .orElseThrow(() -> new RuntimeException("Client not found"));
-        client.setActive(false);
         Client updatedClient = clientRepository.save(client);
         return convertToDTO(updatedClient);
     }
@@ -87,9 +113,19 @@ public class ClientServiceImpl implements ClientService {
     private ClientDTO convertToDTO(Client client) {
         ClientDTO dto = new ClientDTO();
         dto.setClientId(client.getClientId());
-        dto.setClientName(client.getClientName());
-        dto.setCreatedByUsername(client.getCreatedBy().getUsername());
-        dto.setActive(client.isActive());
+        dto.setProjectId(client.getProjectId());
+        dto.setUserId(client.getUserId());
+        return dto;
+    }
+
+    private ClientDTO convertToDTO(ClientDTO client) {
+        ClientDTO dto = new ClientDTO();
+        dto.setUsername(client.getUsername());
+        dto.setClientId(client.getClientId());
+        dto.setProjectId(client.getProjectId());
+        dto.setUserId(client.getUserId());
+        dto.setEmail(client.getEmail());
+        dto.setClientId(client.getClientId());
         return dto;
     }
 

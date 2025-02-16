@@ -59,23 +59,24 @@ public class SignupServiceImpl implements SignupService {
 
     @Override
     public ClientSignUpResponse signup(ClientDTO clientDTO) {
-        if (clientRepository.findByClientName(clientDTO.getClientName()).isPresent()) {
-            throw new RuntimeException("Client name already exists");
-        }
-
-        // Create new client
-        User currentUser = getCurrentUser();
-        Client client = new Client();
-        client.setClientName(clientDTO.getClientName());
-        client.setPassword(passwordEncoder.encode(clientDTO.getPassword()));
-        client.setEmail(clientDTO.getEmail());
-        client.setCreatedBy(currentUser);
-        client.setActive(true);
-
-        // Save client
-        clientRepository.save(client);
-
-        return new ClientSignUpResponse(client.getClientName(),"Client registered successfully");
+//        if (clientRepository.findByClientName(clientDTO.getClientName()).isPresent()) {
+//            throw new RuntimeException("Client name already exists");
+//        }
+//
+//        // Create new client
+//        User currentUser = getCurrentUser();
+//        Client client = new Client();
+//        client.setClientName(clientDTO.getClientName());
+//        client.setPassword(passwordEncoder.encode(clientDTO.getPassword()));
+//        client.setEmail(clientDTO.getEmail());
+//        client.setCreatedBy(currentUser);
+//        client.setActive(true);
+//
+//        // Save client
+//        clientRepository.save(client);
+//
+//        return new ClientSignUpResponse(client.getClientName(),"Client registered successfully");
+        return null;
     }
     private User getCurrentUser() {
         UserDetails userDetails = (UserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
