@@ -65,14 +65,34 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     public ClientDTO updateClient(Long clientId, ClientDTO clientDTO) {
+        Integer userId = clientRepository.findUserIdByClientId(clientId);
+        User user = userRepository.findById(Long.valueOf(userId)).orElseThrow(() -> new RuntimeException("User not found"));
+        if (clientDTO.getUsername() != null) {
+            user.setUsername(clientDTO.getUsername());
+        }
+        if (clientDTO.getPassword() != null) {
+            user.setPassword(clientDTO.getPassword());
+        }
+        if (clientDTO.getEmail() != null) {
+            user.setEmail(clientDTO.getEmail());
+        }
+
+        // Save user
+        User updatedUser = userRepository.save(user);
+
         Client client = clientRepository.findById(clientId)
                 .orElseThrow(() -> new RuntimeException("Client not found"));
 
-        client.setProjectId(clientDTO.getProjectId());
-        client.setUserId(clientDTO.getUserId());
+        if (clientDTO.getProjectId() != null) {
+            client.setProjectId(clientDTO.getProjectId());
+        }
 
         Client updatedClient = clientRepository.save(client);
-        return convertToDTO(updatedClient);
+        clientDTO.setUsername(updatedUser.getUsername());
+        clientDTO.setEmail(updatedUser.getEmail());
+        clientDTO.setProjectId(updatedClient.getProjectId());
+        clientDTO.setUserId(updatedClient.getUserId());
+        return convertToDTO(clientDTO);
     }
 
     @Override
