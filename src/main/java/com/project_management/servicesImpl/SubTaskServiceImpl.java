@@ -1,6 +1,8 @@
 package com.project_management.servicesImpl;
 
 import com.project_management.dto.SubTaskDTO;
+import com.project_management.dto.SubTaskDTONew;
+import com.project_management.dto.UserBasicDTO;
 import com.project_management.models.SubTask;
 import com.project_management.models.Task;
 import com.project_management.models.User;
@@ -12,6 +14,7 @@ import com.project_management.services.SubTaskService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -136,6 +139,46 @@ public class SubTaskServiceImpl implements SubTaskService {
 
         SubTask updatedSubTask = subTaskRepository.save(subTask);
         return convertToDTO(updatedSubTask);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SubTaskDTONew> getSubTasksByTaskId(Long taskId) {
+        return subTaskRepository.findByTaskId(taskId).stream()
+                .map(this::convertToDTONew)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<SubTaskDTONew> getSubTasksByAssignedUserId(Long userId) {
+        return List.of();
+    }
+
+    private SubTaskDTONew convertToDTONew(SubTask subTask) {
+        SubTaskDTONew dto = new SubTaskDTONew();
+        dto.setId(subTask.getId());
+        dto.setName(subTask.getName());
+        dto.setRoleCategory(subTask.getRoleCategory());
+        dto.setStatus(subTask.getStatus());
+        dto.setTags(subTask.getTags());
+        dto.setAssignedDate(subTask.getAssignedDate());
+        dto.setStartDate(subTask.getStartDate());
+        dto.setDeadline(subTask.getDeadline());
+        dto.setCompletedDate(subTask.getCompletedDate());
+
+        if (subTask.getAssignedUser() != null) {
+            dto.setAssignedUser(convertToUserBasicDTO(subTask.getAssignedUser()));
+        }
+
+        return dto;
+    }
+
+    private UserBasicDTO convertToUserBasicDTO(User user) {
+        UserBasicDTO dto = new UserBasicDTO();
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setEmail(user.getEmail());
+        return dto;
     }
 
     private SubTaskDTO convertToDTO(SubTask subTask) {

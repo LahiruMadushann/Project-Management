@@ -1,6 +1,7 @@
 package com.project_management.controllers;
 
 import com.project_management.dto.ProjectDTO;
+import com.project_management.dto.ProjectDetailsDTO;
 import com.project_management.security.utils.SecurityUtil;
 import com.project_management.services.ProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -106,6 +107,10 @@ public class ProjectController {
         } catch (Exception e) {
             return handleException(e);
         }
+    }
+    @GetMapping("/user/{userId}/assigned")
+    public ResponseEntity<List<ProjectDetailsDTO>> getAssignedProjects(@PathVariable Long userId) {
+        return ResponseEntity.ok(projectService.getProjectsAssignedToUser(userId));
     }
 
     private ResponseEntity<String> handleException(Exception e) {

@@ -1,13 +1,16 @@
 package com.project_management.servicesImpl;
 
 import com.project_management.dto.ProjectDTO;
+import com.project_management.dto.ProjectDetailsDTO;
 import com.project_management.models.Project;
 import com.project_management.models.enums.ProjectStatus;
 import com.project_management.repositories.ProjectRepository;
 import com.project_management.services.ProjectService;
+import com.project_management.services.ReleaseVersionService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -19,6 +22,9 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Autowired
     private ProjectRepository projectRepository;
+
+    @Autowired
+    private ReleaseVersionService releaseVersionService;
 
     @Override
     public ProjectDTO createProject(ProjectDTO projectDTO) {
@@ -101,9 +107,33 @@ public class ProjectServiceImpl implements ProjectService {
         projectRepository.deleteById(id);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProjectDetailsDTO> getProjectsAssignedToUser(Long userId) {
+        return projectRepository.findByTasksAssignedUserId(userId).stream()
+                .map(this::convertToProjectDTO)
+                .collect(Collectors.toList());
+    }
+
     private ProjectDTO convertToDTO(Project project) {
         ProjectDTO projectDTO = new ProjectDTO();
         BeanUtils.copyProperties(project, projectDTO);
         return projectDTO;
+    }
+
+    private ProjectDetailsDTO convertToProjectDTO(Project project) {
+        ProjectDetailsDTO dto = new ProjectDetailsDTO();
+        dto.setId(project.getId());
+        dto.setName(project.getName());
+        dto.setSummary(project.getSummary());
+        dto.setDomain(project.getDomain());
+        dto.setBudget(project.getBudget());
+        dto.setDeadline(project.getDeadline());
+        dto.setStatus(project.getStatus());
+        dto.setPredictedBudget(project.getPredictedBudget());
+        dto.setCreatedAt(project.getCreatedAt());
+        dto.setUpdatedAt(project.getUpdatedAt());
+        dto.setReleaseVersions(releaseVersionService.getReleaseVersionsByProjectIdNew(project.getId()));
+        return dto;
     }
 }

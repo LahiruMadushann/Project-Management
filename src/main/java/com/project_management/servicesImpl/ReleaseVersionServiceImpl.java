@@ -1,6 +1,7 @@
 package com.project_management.servicesImpl;
 
 import com.project_management.dto.ReleaseVersionDTO;
+import com.project_management.dto.ReleaseVersionDTONew;
 import com.project_management.dto.SubTaskDTO;
 import com.project_management.dto.TaskDTO;
 import com.project_management.models.Project;
@@ -10,10 +11,12 @@ import com.project_management.models.Task;
 import com.project_management.repositories.ProjectRepository;
 import com.project_management.repositories.ReleaseVersionRepository;
 import com.project_management.services.ReleaseVersionService;
+import com.project_management.services.TaskService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,6 +30,9 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
 
     @Autowired
     private ProjectRepository projectRepository;
+
+    @Autowired
+    private TaskService taskService;
 
     @Override
     public ReleaseVersionDTO createReleaseVersion(ReleaseVersionDTO releaseVersionDTO) {
@@ -55,6 +61,14 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
         List<ReleaseVersion> releaseVersions = releaseVersionRepository.findByProjectId(projectId);
         return releaseVersions.stream()
                 .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ReleaseVersionDTONew> getReleaseVersionsByProjectIdNew(Long projectId) {
+        return releaseVersionRepository.findByProjectId(projectId).stream()
+                .map(this::convertToDTONew)
                 .collect(Collectors.toList());
     }
 
@@ -140,5 +154,17 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
         }
 
         return subTaskDTO;
+    }
+
+    private ReleaseVersionDTONew convertToDTONew(ReleaseVersion version) {
+        ReleaseVersionDTONew dto = new ReleaseVersionDTONew();
+        dto.setId(version.getId());
+        dto.setVersionName(version.getVersionName());
+        dto.setVersionDescription(version.getVersionDescription());
+        dto.setCreatedAt(version.getCreatedAt());
+        dto.setUpdatedAt(version.getUpdatedAt());
+        dto.setVersionLimitConstant(version.getVersionLimitConstant());
+        dto.setTasks(taskService.getTasksByReleaseVersionId(version.getId()));
+        return dto;
     }
 }

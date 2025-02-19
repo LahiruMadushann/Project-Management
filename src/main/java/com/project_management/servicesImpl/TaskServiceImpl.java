@@ -8,6 +8,7 @@ import com.project_management.repositories.EmployeeRepository;
 import com.project_management.repositories.ReleaseVersionRepository;
 import com.project_management.repositories.TaskRepository;
 import com.project_management.repositories.UserRepository;
+import com.project_management.services.SubTaskService;
 import com.project_management.services.TaskService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +37,11 @@ public class TaskServiceImpl implements TaskService {
 
     @Autowired
     private EmployeeRepository employeeRepository;
+
+    @Autowired
+    private SubTaskService subTaskService;
+
+
 
     @Override
     public TaskDTO createTask(TaskDTO taskDTO) {
@@ -111,6 +117,14 @@ public class TaskServiceImpl implements TaskService {
 
         return taskRepository.findByReleaseVersion(releaseVersion).stream()
                 .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TaskDTONew> getTasksByReleaseVersionIdNew(Long releaseVersionId) {
+        return taskRepository.findByReleaseVersionId(releaseVersionId).stream()
+                .map(this::convertToDTONew)
                 .collect(Collectors.toList());
     }
 
@@ -288,6 +302,36 @@ public class TaskServiceImpl implements TaskService {
             subTaskDTO.setAssignedUserId(subTask.getAssignedUser().getId());
         }
         return subTaskDTO;
+    }
+
+    private TaskDTONew convertToDTONew(Task task) {
+        TaskDTONew dto = new TaskDTONew();
+        dto.setId(task.getId());
+        dto.setName(task.getName());
+        dto.setRoleCategory(task.getRoleCategory());
+        dto.setStatus(task.getStatus());
+        dto.setTags(task.getTags());
+        dto.setAssignedDate(task.getAssignedDate());
+        dto.setStartDate(task.getStartDate());
+        dto.setDeadline(task.getDeadline());
+        dto.setCompletedDate(task.getCompletedDate());
+        dto.setDifficultyLevel(task.getDifficultyLevel());
+        dto.setPriorityLevel(task.getPriorityLevel());
+
+        if (task.getAssignedUser() != null) {
+            dto.setAssignedUser(convertToUserBasicDTO(task.getAssignedUser()));
+        }
+
+        dto.setSubTasks(subTaskService.getSubTasksByTaskId(task.getId()));
+        return dto;
+    }
+
+    private UserBasicDTO convertToUserBasicDTO(User user) {
+        UserBasicDTO dto = new UserBasicDTO();
+        dto.setId(user.getId());
+        dto.setUsername(user.getUsername());
+        dto.setEmail(user.getEmail());
+        return dto;
     }
 
 }

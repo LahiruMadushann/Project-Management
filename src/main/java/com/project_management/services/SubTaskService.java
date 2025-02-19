@@ -1,6 +1,8 @@
 package com.project_management.services;
 
 import com.project_management.dto.SubTaskDTO;
+import com.project_management.dto.SubTaskDTONew;
+
 import java.util.List;
 
 public interface SubTaskService {
@@ -10,4 +12,6 @@ public interface SubTaskService {
     SubTaskDTO updateSubTask(Long id, SubTaskDTO subTaskDTO);
     void deleteSubTask(Long id);
     SubTaskDTO assignSubTaskToUser(Long subTaskId, Long userId);
+    List<SubTaskDTONew> getSubTasksByTaskId(Long taskId);
+    List<SubTaskDTONew> getSubTasksByAssignedUserId(Long userId);
 }
