@@ -40,5 +40,5 @@ public class Project {
     @Column(name = "status")
     private ProjectStatus status = ProjectStatus.PENDING;
 
-    private BigDecimal predictedBudget;
+    private BigDecimal predictedBudgetForResources;
 }

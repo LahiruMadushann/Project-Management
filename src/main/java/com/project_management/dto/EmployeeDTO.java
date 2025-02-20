@@ -21,4 +21,5 @@ public class EmployeeDTO {
     private Integer maximumAssessedCount;
     private Integer difficultyLevel;
     private Domain domain;
+    private Double salary;
 }
