@@ -1,16 +1,20 @@
 package com.project_management.servicesImpl;
 
-import com.project_management.dto.ProjectDTO;
-import com.project_management.dto.ProjectDetailsDTO;
+import com.project_management.dto.*;
+import com.project_management.models.AdvanceDetails;
 import com.project_management.models.Project;
 import com.project_management.models.enums.ProjectStatus;
+import com.project_management.repositories.AdvanceDetailsRepository;
 import com.project_management.repositories.ProjectRepository;
 import com.project_management.services.ProjectService;
 import com.project_management.services.ReleaseVersionService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -25,6 +29,15 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Autowired
     private ReleaseVersionService releaseVersionService;
+
+    @Autowired
+    private AdvanceDetailsRepository advanceDetailsRepository;
+
+    @Autowired
+    RestTemplate restTemplate;
+
+    @Value("${ml.service.url.effort}")
+    private String effortURL;
 
     @Override
     public ProjectDTO createProject(ProjectDTO projectDTO) {
@@ -115,10 +128,76 @@ public class ProjectServiceImpl implements ProjectService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public AdvanceDetails saveAdvance(AdvanceDetailsDTO advanceDetailsDTO) {
+
+        EffortRequestDto effortRequestDto = new EffortRequestDto();
+        effortRequestDto.setMethodology(advanceDetailsDTO.getMethodology());
+        effortRequestDto.setScheduleQuality(advanceDetailsDTO.getScheduleQuality());
+        effortRequestDto.setMultiLang(1);
+        effortRequestDto.setProgrammingLang(advanceDetailsDTO.getProgrammingLang());
+        effortRequestDto.setDbms(advanceDetailsDTO.getDbms());
+        effortRequestDto.setStandards(advanceDetailsDTO.getStandard());
+        effortRequestDto.setAccuracy(advanceDetailsDTO.getRequirementAccuracy());
+        effortRequestDto.setDocumentation(advanceDetailsDTO.getDocumentation());
+        // Prepare headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<EffortRequestDto> entity = new HttpEntity<>(effortRequestDto, headers);
+
+        // Send the request to the ML service
+        ResponseEntity<EffortResponseDto> mlResponse = restTemplate.exchange(
+                effortURL,
+                HttpMethod.POST,
+                entity,
+                EffortResponseDto.class
+        );
+
+        // Check the response status and handle errors
+        if (!mlResponse.getStatusCode().is2xxSuccessful() || mlResponse.getBody() == null) {
+            throw new RuntimeException("Failed to get prediction from ML service: " +
+                    mlResponse.getStatusCode());
+        }
+        System.out.println(mlResponse.getBody().getEffort());
+        return advanceDetailsRepository.save(convertToAdvanceModel(advanceDetailsDTO));
+    }
+
+    @Override
+    public AdvanceDetails getAdvanceDetailsByProjectId(Long projectId) {
+        return advanceDetailsRepository.findByProjectId(projectId);
+    }
+
+    @Override
+    public AdvanceDetails getAdvanceDetailsById(Long id) {
+        return advanceDetailsRepository.findById(id).orElseThrow();
+    }
+
     private ProjectDTO convertToDTO(Project project) {
         ProjectDTO projectDTO = new ProjectDTO();
         BeanUtils.copyProperties(project, projectDTO);
         return projectDTO;
+    }
+
+    private AdvanceDetails convertToAdvanceModel(AdvanceDetailsDTO dto) {
+        AdvanceDetails entity = new AdvanceDetails();
+        entity.setProjectId(dto.getProjectId());
+        entity.setDomain(dto.getDomain());
+        entity.setMethodology(dto.getMethodology());
+        entity.setProgrammingLang(dto.getProgrammingLang());
+        entity.setDbms(dto.getDbms());
+        entity.setDevops(dto.getDevops());
+        entity.setIntegration(dto.getIntegration());
+        entity.setMl(dto.getMl());
+        entity.setSecurityLevel(dto.getSecurityLevel());
+        entity.setUserCount(dto.getUserCount());
+        entity.setDuration(dto.getDuration());
+        entity.setScheduleQuality(dto.getScheduleQuality());
+        entity.setStandard(dto.getStandard());
+        entity.setRequirementAccuracy(dto.getRequirementAccuracy());
+        entity.setDocumentation(dto.getDocumentation());
+        entity.setExpectedProfit(dto.getExpectedProfit());
+        entity.setOtherExpenses(dto.getOtherExpenses());
+        return entity;
     }
 
     private ProjectDetailsDTO convertToProjectDTO(Project project) {
@@ -136,4 +215,5 @@ public class ProjectServiceImpl implements ProjectService {
         dto.setReleaseVersions(releaseVersionService.getReleaseVersionsByProjectIdNew(project.getId()));
         return dto;
     }
+
 }

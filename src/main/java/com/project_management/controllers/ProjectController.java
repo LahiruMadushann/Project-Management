@@ -1,7 +1,9 @@
 package com.project_management.controllers;
 
+import com.project_management.dto.AdvanceDetailsDTO;
 import com.project_management.dto.ProjectDTO;
 import com.project_management.dto.ProjectDetailsDTO;
+import com.project_management.models.AdvanceDetails;
 import com.project_management.security.utils.SecurityUtil;
 import com.project_management.services.ProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -112,6 +114,18 @@ public class ProjectController {
     public ResponseEntity<List<ProjectDetailsDTO>> getAssignedProjects(@PathVariable Long userId) {
         return ResponseEntity.ok(projectService.getProjectsAssignedToUser(userId));
     }
+
+    @PostMapping("/advance")
+    public ResponseEntity<AdvanceDetails> projectAdvance(@RequestBody AdvanceDetailsDTO advanceDetailsDTO){
+        return ResponseEntity.ok().body(projectService.saveAdvance(advanceDetailsDTO));
+    }
+
+    @GetMapping("/advance/{projectId}")
+    public ResponseEntity<AdvanceDetails> getAdvanceDetails(@PathVariable Long projectId) {
+        AdvanceDetails advanceDetails = projectService.getAdvanceDetailsByProjectId(projectId);
+        return ResponseEntity.ok().body(advanceDetails);
+    }
+
 
     private ResponseEntity<String> handleException(Exception e) {
         e.printStackTrace();
