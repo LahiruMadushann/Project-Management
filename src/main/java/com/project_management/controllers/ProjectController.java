@@ -1,6 +1,7 @@
 package com.project_management.controllers;
 
 import com.project_management.dto.AdvanceDetailsDTO;
+import com.project_management.dto.EffortCombinedCallResponse;
 import com.project_management.dto.ProjectDTO;
 import com.project_management.dto.ProjectDetailsDTO;
 import com.project_management.models.AdvanceDetails;
@@ -116,7 +117,7 @@ public class ProjectController {
     }
 
     @PostMapping("/advance")
-    public ResponseEntity<AdvanceDetails> projectAdvance(@RequestBody AdvanceDetailsDTO advanceDetailsDTO){
+    public ResponseEntity<EffortCombinedCallResponse> projectAdvance(@RequestBody AdvanceDetailsDTO advanceDetailsDTO){
         return ResponseEntity.ok().body(projectService.saveAdvance(advanceDetailsDTO));
     }
 

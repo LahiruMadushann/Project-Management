@@ -3,9 +3,11 @@ package com.project_management.servicesImpl;
 import com.project_management.dto.*;
 import com.project_management.models.AdvanceDetails;
 import com.project_management.models.Project;
+import com.project_management.models.ProjectResourceConfig;
 import com.project_management.models.enums.ProjectStatus;
 import com.project_management.repositories.AdvanceDetailsRepository;
 import com.project_management.repositories.ProjectRepository;
+import com.project_management.repositories.ProjectResourceConfigRepository;
 import com.project_management.services.ProjectService;
 import com.project_management.services.ReleaseVersionService;
 import org.springframework.beans.BeanUtils;
@@ -34,10 +36,16 @@ public class ProjectServiceImpl implements ProjectService {
     private AdvanceDetailsRepository advanceDetailsRepository;
 
     @Autowired
+    private ProjectResourceConfigRepository projectResourceConfigRepository;
+
+    @Autowired
     RestTemplate restTemplate;
 
     @Value("${ml.service.url.effort}")
     private String effortURL;
+
+    @Value("${ml.service.url.resources}")
+    private String resourceMLURL;
 
     @Override
     public ProjectDTO createProject(ProjectDTO projectDTO) {
@@ -129,7 +137,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public AdvanceDetails saveAdvance(AdvanceDetailsDTO advanceDetailsDTO) {
+    public EffortCombinedCallResponse saveAdvance(AdvanceDetailsDTO advanceDetailsDTO) {
 
         EffortRequestDto effortRequestDto = new EffortRequestDto();
         effortRequestDto.setMethodology(advanceDetailsDTO.getMethodology());
@@ -158,8 +166,59 @@ public class ProjectServiceImpl implements ProjectService {
             throw new RuntimeException("Failed to get prediction from ML service: " +
                     mlResponse.getStatusCode());
         }
-        System.out.println(mlResponse.getBody().getEffort());
-        return advanceDetailsRepository.save(convertToAdvanceModel(advanceDetailsDTO));
+
+        ResourceMLRequestDTO requestDto = new ResourceMLRequestDTO();
+        requestDto.setDomain(advanceDetailsDTO.getDomain());
+        requestDto.setMethodology(advanceDetailsDTO.getMethodology()==2?"Agile":"Waterfall");
+        requestDto.setDatabaseType("SQL");
+        requestDto.setUserCountEstimate(advanceDetailsDTO.getUserCount());
+        requestDto.setProjectSize("Medium");
+        requestDto.setDataSecurityLevel("Medium");
+        requestDto.setExpectedDataSize(advanceDetailsDTO.getUserCount());
+        requestDto.setCloudType("Private");
+        requestDto.setIsMultiDB(0);
+        requestDto.setIsMultiLang(1);
+        requestDto.setMachineLearningEnabled(advanceDetailsDTO.getMl() ?1:0);
+        requestDto.setIsDevOps(advanceDetailsDTO.getDevops()? 1:0);
+        requestDto.setIntegrationRequired(advanceDetailsDTO.getIntegration()?1:0);
+        HttpEntity<ResourceMLRequestDTO> entity2 = new HttpEntity<>(requestDto, headers);
+
+        // Send the request to the ML service
+        ResponseEntity<ResourceMLResponseDTO> mlResponse2 = restTemplate.exchange(
+                resourceMLURL,
+                HttpMethod.POST,
+                entity2,
+                ResourceMLResponseDTO.class
+        );
+
+        // Check the response status and handle errors
+        if (!mlResponse2.getStatusCode().is2xxSuccessful() || mlResponse2.getBody() == null) {
+            throw new RuntimeException("Failed to get prediction from ML service: " +
+                    mlResponse2.getStatusCode());
+        }
+
+        // Save the response to the database
+        ResourceMLResponseDTO responseDTO = mlResponse2.getBody();
+        ProjectResourceConfig projectResourceConfig = new ProjectResourceConfig();
+        projectResourceConfig.setProjectId(advanceDetailsDTO.getProjectId());
+        projectResourceConfig.setCloud(responseDTO.getResourceCloud().isPrediction());
+        projectResourceConfig.setDb(responseDTO.getResourceDB().isPrediction());
+        projectResourceConfig.setAutomation(responseDTO.getResourceAutomation().isPrediction());
+        projectResourceConfig.setSecurity(responseDTO.getResourceSecurity().isPrediction());
+        projectResourceConfig.setCollaboration(responseDTO.getResourceCollaboration().isPrediction());
+        projectResourceConfig.setIde(responseDTO.getResourceIdeTools().isPrediction());
+
+        // Save using JPA repository
+        projectResourceConfigRepository.save(projectResourceConfig);
+
+
+
+        EffortCombinedCallResponse combinedCallResponse = new EffortCombinedCallResponse();
+        combinedCallResponse.setEffort(mlResponse.getBody());
+        combinedCallResponse.setResources(mlResponse2.getBody());
+        advanceDetailsRepository.save(convertToAdvanceModel(advanceDetailsDTO));
+
+        return combinedCallResponse;
     }
 
     @Override
