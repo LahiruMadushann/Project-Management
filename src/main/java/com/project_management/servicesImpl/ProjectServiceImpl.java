@@ -81,7 +81,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public List<ProjectDTO> getAllProjectsBudgetActive() {
         return projectRepository.findAll().stream()
-                .filter(project -> project.getPredictedBudget() != null && project.getPredictedBudget().compareTo(BigDecimal.ZERO) > 0)
+                .filter(project -> project.getPredictedBudgetForResources() != null && project.getPredictedBudgetForResources().compareTo(BigDecimal.ZERO) > 0)
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -107,6 +107,8 @@ public class ProjectServiceImpl implements ProjectService {
         if (projectDTO.getDeadline() != null) {
             existingProject.setDeadline(projectDTO.getDeadline());
         }
+
+        existingProject.setPredictedBudgetForResources(projectDTO.getPredictedBudgetForResources());
 
         existingProject.setUpdatedAt(LocalDateTime.now());
 
@@ -351,7 +353,7 @@ public class ProjectServiceImpl implements ProjectService {
         dto.setBudget(project.getBudget());
         dto.setDeadline(project.getDeadline());
         dto.setStatus(project.getStatus());
-        dto.setPredictedBudget(project.getPredictedBudget());
+        dto.setPredictedBudget(project.getPredictedBudgetForResources());
         dto.setCreatedAt(project.getCreatedAt());
         dto.setUpdatedAt(project.getUpdatedAt());
         dto.setReleaseVersions(releaseVersionService.getReleaseVersionsByProjectIdNew(project.getId()));

@@ -233,6 +233,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         dto.setMaximumAssessedCount(employee.getMaximumAssessedCount());
         dto.setDifficultyLevel(employee.getDifficultyLevel());
         dto.setDomain(employee.getDomain());
+        dto.setSalary(employee.getSalary());
 
         dto.setSkills(employee.getSkills().stream().map(this::convertToSkillDTO).collect(Collectors.toList()));
         dto.setExperiences(employee.getExperiences().stream().map(this::convertToExperienceDTO).collect(Collectors.toList()));

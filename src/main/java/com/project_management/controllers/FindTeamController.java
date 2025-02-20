@@ -1,5 +1,6 @@
 package com.project_management.controllers;
 
+import com.project_management.dto.CombinedFindTeamResponseDto;
 import com.project_management.dto.FindTeamDTO;
 import com.project_management.dto.TeamMemberUpdateDTO;
 import com.project_management.dto.TeamUpdateDTO;
@@ -23,7 +24,7 @@ public class FindTeamController {
     @GetMapping("/find")
     public ResponseEntity<?> getTeam(@RequestBody FindTeamDTO findTeamDTO) {
         try {
-            List<TeamAssignment> assignedTeam = teamService.findAndAssignTeam(findTeamDTO);
+            CombinedFindTeamResponseDto assignedTeam = teamService.findAndAssignTeam(findTeamDTO);
             return ResponseEntity.ok(assignedTeam);
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());

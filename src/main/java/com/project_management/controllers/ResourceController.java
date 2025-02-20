@@ -10,7 +10,6 @@ import com.project_management.models.enums.BudgetTiers;
 import com.project_management.models.enums.ResourceType;
 import com.project_management.repositories.ProjectRepository;
 import com.project_management.repositories.ProjectResourceConfigRepository;
-import com.project_management.services.ProjectService;
 import com.project_management.services.ResourceService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -109,7 +107,7 @@ public class ResourceController {
 
             // Save the response to the database
             ResourceMLResponseDTO responseDTO = mlResponse.getBody();
-            responseDTO.setProjectBudget(projectRepository.findById(projectId).get().getPredictedBudget());
+            responseDTO.setProjectBudget(projectRepository.findById(projectId).get().getPredictedBudgetForResources());
             ProjectResourceConfig projectResourceConfig = new ProjectResourceConfig();
             projectResourceConfig.setProjectId(projectId);
             projectResourceConfig.setCloud(responseDTO.getResourceCloud().isPrediction());

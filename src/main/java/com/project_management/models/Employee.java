@@ -55,5 +55,7 @@ public class Employee {
     @Enumerated(EnumType.STRING)
     @Column(name = "domain", nullable = false)
     private Domain domain;
+
+    private Double salary;
 }
 
