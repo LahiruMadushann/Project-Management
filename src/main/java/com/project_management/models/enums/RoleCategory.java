@@ -7,5 +7,8 @@ public enum RoleCategory {
     pm,
     qa,
     se,
-    ui
+    ui,
+    sse,
+    sqa,
+    aqa
 }

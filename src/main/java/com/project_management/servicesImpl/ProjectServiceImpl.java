@@ -1,10 +1,9 @@
 package com.project_management.servicesImpl;
 
 import com.project_management.dto.*;
-import com.project_management.models.AdvanceDetails;
-import com.project_management.models.Project;
-import com.project_management.models.ProjectResourceConfig;
+import com.project_management.models.*;
 import com.project_management.models.enums.ProjectStatus;
+import com.project_management.models.enums.RoleCategory;
 import com.project_management.repositories.AdvanceDetailsRepository;
 import com.project_management.repositories.ProjectRepository;
 import com.project_management.repositories.ProjectResourceConfigRepository;
@@ -20,7 +19,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,6 +45,12 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Value("${ml.service.url.resources}")
     private String resourceMLURL;
+
+    @Value("${ml.service.url.calculateHeads}")
+    private String calculateHeadsURL;
+
+    @Value("${ml.service.url.predictRoles}")
+    private String predictRoles;
 
     @Override
     public ProjectDTO createProject(ProjectDTO projectDTO) {
@@ -211,6 +216,84 @@ public class ProjectServiceImpl implements ProjectService {
         // Save using JPA repository
         projectResourceConfigRepository.save(projectResourceConfig);
 
+        ReleaseVersionDTO releaseVersion = releaseVersionService.getReleaseVersionById(advanceDetailsDTO.getProjectId());
+        TaskAnalyticsResponseDTO requestBody = new TaskAnalyticsResponseDTO();
+
+        Map<String, List<TaskCountByPriorityDTO>> tasksByRole = new HashMap<>();
+        for (RoleCategory role : RoleCategory.values()) {
+            tasksByRole.put(role.name().toLowerCase(), new ArrayList<>());
+        }
+
+        List<TaskDTO> tasks = releaseVersion.getTasks();
+        Map<String, Map<String, Long>> countByRoleAndPriority = new HashMap<>();
+
+        for (TaskDTO task : tasks) {
+            String roleCategory = task.getRoleCategory().toString().toLowerCase();
+            String priority = task.getPriorityLevel().toString().toLowerCase();
+
+            countByRoleAndPriority.computeIfAbsent(roleCategory, k -> new HashMap<>());
+            Map<String, Long> priorityCount = countByRoleAndPriority.get(roleCategory);
+            priorityCount.merge(priority, 1L, Long::sum);
+
+            if (task.getSubTaskList() != null) {
+                for (SubTaskDTO subTask : task.getSubTaskList()) {
+                    String subTaskRole = subTask.getRoleCategory().toString().toLowerCase();
+                    countByRoleAndPriority.computeIfAbsent(subTaskRole, k -> new HashMap<>());
+                    Map<String, Long> subTaskPriorityCount = countByRoleAndPriority.get(subTaskRole);
+                    subTaskPriorityCount.merge(priority, 1L, Long::sum);
+                }
+            }
+        }
+
+        for (Map.Entry<String, Map<String, Long>> roleEntry : countByRoleAndPriority.entrySet()) {
+            String role = roleEntry.getKey();
+            List<TaskCountByPriorityDTO> priorityCounts = new ArrayList<>();
+
+            for (Map.Entry<String, Long> priorityEntry : roleEntry.getValue().entrySet()) {
+                TaskCountByPriorityDTO countByPriority = new TaskCountByPriorityDTO();
+                countByPriority.setCount(priorityEntry.getValue());
+                countByPriority.setPriority(priorityEntry.getKey());
+                priorityCounts.add(countByPriority);
+            }
+
+            tasksByRole.put(role, priorityCounts);
+        }
+
+        Iterator<Map.Entry<String, List<TaskCountByPriorityDTO>>> iterator = tasksByRole.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, List<TaskCountByPriorityDTO>> entry = iterator.next();
+            if (entry.getValue().isEmpty()) {
+                iterator.remove();
+            }
+        }
+
+        requestBody.setTasks(tasksByRole);
+        requestBody.setEffort(100);
+
+        List<String> roles = Arrays.stream(RoleCategory.values())
+                .map(role -> role.name().toLowerCase())
+                .collect(Collectors.toList());
+        requestBody.setRoles(roles);
+
+
+        HttpEntity<TaskAnalyticsResponseDTO> requestEntity = new HttpEntity<>(requestBody, headers);
+
+        System.out.println("Request Entity: " + requestEntity);
+
+        ResponseEntity<TaskAnalyticsResponseDTO> mlResponse3 = restTemplate.exchange(
+                predictRoles,
+                HttpMethod.POST,
+                requestEntity,
+                TaskAnalyticsResponseDTO.class
+        );
+
+        if (!mlResponse3.getStatusCode().is2xxSuccessful() || mlResponse3.getBody() == null) {
+            throw new RuntimeException("Failed to get prediction from ML service: " + mlResponse3.getStatusCode());
+        }
+
+        if(mlResponse3.getBody().getRoles().isEmpty()){
+            mlResponse3.getBody().setRoles(roles);
+        }
 
 
         EffortCombinedCallResponse combinedCallResponse = new EffortCombinedCallResponse();
