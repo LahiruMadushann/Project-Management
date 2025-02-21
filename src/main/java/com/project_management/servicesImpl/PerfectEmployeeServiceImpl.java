@@ -54,6 +54,8 @@ public class PerfectEmployeeServiceImpl implements PerfectEmployeeService {
         // Update basic fields
         existingEmployee.setRoleName(perfectEmployeeDTO.getRoleName());
         existingEmployee.setRoleCategory(perfectEmployeeDTO.getRoleCategory());
+        existingEmployee.setRoleShortName(perfectEmployeeDTO.getRoleShortName());
+        existingEmployee.setRoleDistributionValue(perfectEmployeeDTO.getRoleDistributionValue());
 
         // Update educations
         if (perfectEmployeeDTO.getEducations() != null) {
@@ -113,6 +115,8 @@ public class PerfectEmployeeServiceImpl implements PerfectEmployeeService {
         PerfectEmployee entity = new PerfectEmployee();
         entity.setEmployeeId(dto.getEmployeeId());
         entity.setRoleName(dto.getRoleName());
+        entity.setRoleShortName(dto.getRoleShortName());
+        entity.setRoleDistributionValue(dto.getRoleDistributionValue());
         entity.setRoleCategory(dto.getRoleCategory());
         List<PerfectEmployeeSkill> skills = dto.getSkills().stream()
                 .map(skillDto -> {
@@ -150,6 +154,8 @@ public class PerfectEmployeeServiceImpl implements PerfectEmployeeService {
         dto.setRoleName(entity.getRoleName());
         dto.setRoleCategory(entity.getRoleCategory());
         dto.setCreatedByUserId(entity.getCreatedBy().getId());
+        dto.setRoleShortName(entity.getRoleShortName());
+        dto.setRoleDistributionValue(entity.getRoleDistributionValue());
 
         dto.setSkills(entity.getSkills().stream().map(this::convertSkillToDTO).collect(Collectors.toList()));
         dto.setExperiences(entity.getExperiences().stream().map(this::convertExperienceToDTO).collect(Collectors.toList()));
