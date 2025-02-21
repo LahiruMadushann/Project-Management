@@ -299,8 +299,6 @@ public class ProjectServiceImpl implements ProjectService {
             mlResponse3.getBody().setRoles(roles);
         }
         EffortResponse effortResponse = calculateEffort(advanceDetailsDTO.getProjectId());
-        // Validate and ensure all task types have role distributions
-        effortResponse = prepareEffortResponse(effortResponse);
 
         HttpEntity<EffortResponse> requestEntity2 = new HttpEntity<>(effortResponse, headers);
 
@@ -440,28 +438,6 @@ public class ProjectServiceImpl implements ProjectService {
         return distribution;
     }
 
-    public EffortResponse prepareEffortResponse(EffortResponse effortResponse) {
-        // Get all task types from the tasks map
-        Set<String> taskTypes = effortResponse.getTasks().keySet();
-
-        // Ensure each task type has an entry in role_distribution
-        Map<String, Map<String, Double>> roleDistribution = effortResponse.getRoleDistribution();
-
-        for (String taskType : taskTypes) {
-            // If this task type doesn't have a role distribution, add a default one
-            if (!roleDistribution.containsKey(taskType)) {
-                Map<String, Double> defaultRoleDistribution = new HashMap<>();
-                // Add your default roles and percentages
-                defaultRoleDistribution.put("dev", 0.7);
-                defaultRoleDistribution.put("qa", 0.3);
-
-                roleDistribution.put(taskType, defaultRoleDistribution);
-            }
-        }
-
-        effortResponse.setRoleDistribution(roleDistribution);
-        return effortResponse;
-    }
 
     private int getDefaultStoryPoints(String role) {
         // Default values as specified in the requirements
