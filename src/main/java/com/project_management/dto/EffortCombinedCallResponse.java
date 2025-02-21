@@ -9,4 +9,5 @@ public class EffortCombinedCallResponse {
     private EffortResponseDto effort;
     private ResourceMLResponseDTO resources;
     private List<String> roles;
+    private CalculateHeadRequestDTO calculateHeadRequest;
 }

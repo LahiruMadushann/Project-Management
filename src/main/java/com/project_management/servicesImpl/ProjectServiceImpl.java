@@ -7,6 +7,7 @@ import com.project_management.models.enums.RoleCategory;
 import com.project_management.repositories.AdvanceDetailsRepository;
 import com.project_management.repositories.ProjectRepository;
 import com.project_management.repositories.ProjectResourceConfigRepository;
+import com.project_management.services.PerfectEmployeeService;
 import com.project_management.services.ProjectService;
 import com.project_management.services.ReleaseVersionService;
 import org.springframework.beans.BeanUtils;
@@ -30,6 +31,9 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Autowired
     private ReleaseVersionService releaseVersionService;
+
+    @Autowired
+    private PerfectEmployeeService perfectEmployeeService;
 
     @Autowired
     private AdvanceDetailsRepository advanceDetailsRepository;
@@ -280,8 +284,6 @@ public class ProjectServiceImpl implements ProjectService {
 
         HttpEntity<TaskAnalyticsResponseDTO> requestEntity = new HttpEntity<>(requestBody, headers);
 
-        System.out.println("Request Entity: " + requestEntity);
-
         ResponseEntity<TaskAnalyticsResponseDTO> mlResponse3 = restTemplate.exchange(
                 predictRoles,
                 HttpMethod.POST,
@@ -296,15 +298,187 @@ public class ProjectServiceImpl implements ProjectService {
         if(mlResponse3.getBody().getRoles().isEmpty()){
             mlResponse3.getBody().setRoles(roles);
         }
+        EffortResponse effortResponse = calculateEffort(advanceDetailsDTO.getProjectId());
+        // Validate and ensure all task types have role distributions
+        effortResponse = prepareEffortResponse(effortResponse);
 
+        HttpEntity<EffortResponse> requestEntity2 = new HttpEntity<>(effortResponse, headers);
+
+        ResponseEntity<CalculateHeadRequestDTO> mlResponse4 = restTemplate.exchange(
+                calculateHeadsURL,
+                HttpMethod.POST,
+                requestEntity2,
+                CalculateHeadRequestDTO.class
+        );
+
+        if (!mlResponse4.getStatusCode().is2xxSuccessful() || mlResponse4.getBody() == null) {
+            throw new RuntimeException("Failed to get prediction from ML service: " + mlResponse4.getStatusCode());
+        }
 
         EffortCombinedCallResponse combinedCallResponse = new EffortCombinedCallResponse();
         combinedCallResponse.setEffort(mlResponse.getBody());
         combinedCallResponse.setResources(mlResponse2.getBody());
         combinedCallResponse.setRoles(mlResponse3.getBody().getRoles());
+        combinedCallResponse.setCalculateHeadRequest(mlResponse4.getBody());
         advanceDetailsRepository.save(convertToAdvanceModel(advanceDetailsDTO));
 
         return combinedCallResponse;
+    }
+
+    public EffortResponse calculateEffort(Long projectId) {
+        EffortResponse response = new EffortResponse();
+
+        // Get release version data including role distributions
+        ReleaseVersionDTO releaseVersion = releaseVersionService.getReleaseVersionById(projectId);
+
+        // Set role distributions from the service response
+        response.setRoleDistribution(calculateRoleDistribution(perfectEmployeeService.getAllPerfectEmployees()));
+
+        // Calculate tasks count from release version
+        Map<String, Integer> tasksCount = calculateTasksCount(releaseVersion);
+        response.setTasks(tasksCount);
+
+        // Calculate max story points based on difficulty levels
+        Map<String, Integer> storyPoints = calculateMaxStoryPoints(releaseVersion);
+        response.setMaxStoryPoints(storyPoints);
+
+        return response;
+    }
+
+    private Map<String, Integer> calculateTasksCount(ReleaseVersionDTO releaseVersion) {
+        Map<String, Integer> tasksCount = new HashMap<>();
+
+        // Initialize counters for each role category
+        Arrays.stream(RoleCategory.values())
+                .forEach(role -> tasksCount.put(role.name().toLowerCase(), 0));
+
+        // Count main tasks
+        releaseVersion.getTasks().forEach(task -> {
+            String roleCategory = task.getRoleCategory().toString().toLowerCase();
+            tasksCount.merge(roleCategory, 1, Integer::sum);
+
+            // Count subtasks
+            if (task.getSubTaskList() != null) {
+                task.getSubTaskList().forEach(subTask -> {
+                    String subTaskRole = subTask.getRoleCategory().toString().toLowerCase();
+                    tasksCount.merge(subTaskRole, 1, Integer::sum);
+                });
+            }
+        });
+
+        return tasksCount;
+    }
+
+    private Map<String, Integer> calculateMaxStoryPoints(ReleaseVersionDTO releaseVersion) {
+        Map<String, Integer> storyPoints = new HashMap<>();
+
+        Map<String, Map<String, Double>> roleDistribution = calculateRoleDistribution(perfectEmployeeService.getAllPerfectEmployees());
+
+        // Iterate through each role category from the distribution data
+        roleDistribution.forEach((roleCategory, subRoles) -> {
+            // For each task that matches this role category
+            releaseVersion.getTasks().stream()
+                    .filter(task -> roleCategory.equals(task.getRoleCategory().toString().toLowerCase()))
+                    .forEach(task -> {
+                        // Get the difficulty level, use default values if null
+                        Integer difficultyLevel = task.getDifficultyLevel();
+
+                        // Update story points for each sub-role
+                        subRoles.keySet().forEach(subRole -> {
+                            if (difficultyLevel != null) {
+                                storyPoints.put(subRole, difficultyLevel);
+                            } else {
+                                // Use default values when difficultyLevel is null
+                                int defaultValue = getDefaultStoryPoints(subRole);
+                                storyPoints.put(subRole, defaultValue);
+                            }
+                        });
+                    });
+        });
+
+        return storyPoints;
+    }
+
+    public Map<String, Map<String, Double>> calculateRoleDistribution(List<PerfectEmployeeDTO> employees) {
+        Map<String, Map<String, Double>> distribution = new HashMap<>();
+
+        // Group employees by roleCategory
+        Map<String, List<PerfectEmployeeDTO>> categoryGroups = employees.stream()
+                .collect(Collectors.groupingBy(
+                        employee -> employee.getRoleCategory().toString().toLowerCase(),
+                        Collectors.toList()
+                ));
+
+        // Process each category
+        categoryGroups.forEach((category, categoryEmployees) -> {
+            // Group employees by roleShortName within category
+            Map<String, List<PerfectEmployeeDTO>> roleGroups = categoryEmployees.stream()
+                    .collect(Collectors.groupingBy(
+                            PerfectEmployeeDTO::getRoleShortName,  // Changed this line
+                            Collectors.toList()
+                    ));
+
+            Map<String, Double> roleDistributions = new HashMap<>();
+
+            // Calculate distributions for each role
+            roleGroups.forEach((roleShortName, roleEmployees) -> {
+                // Get the distribution value from the first employee with non-zero distribution
+                Optional<PerfectEmployeeDTO> employeeWithDistribution = roleEmployees.stream()
+                        .filter(e -> e.getRoleDistributionValue() > 0)
+                        .findFirst();
+
+                double distributionValue = employeeWithDistribution
+                        .map(e -> e.getRoleDistributionValue() / 100.0)
+                        .orElse(0.4); // Default value if no distribution is set
+
+                roleDistributions.put(roleShortName, distributionValue);
+            });
+
+            distribution.put(category, roleDistributions);
+        });
+
+        return distribution;
+    }
+
+    public EffortResponse prepareEffortResponse(EffortResponse effortResponse) {
+        // Get all task types from the tasks map
+        Set<String> taskTypes = effortResponse.getTasks().keySet();
+
+        // Ensure each task type has an entry in role_distribution
+        Map<String, Map<String, Double>> roleDistribution = effortResponse.getRoleDistribution();
+
+        for (String taskType : taskTypes) {
+            // If this task type doesn't have a role distribution, add a default one
+            if (!roleDistribution.containsKey(taskType)) {
+                Map<String, Double> defaultRoleDistribution = new HashMap<>();
+                // Add your default roles and percentages
+                defaultRoleDistribution.put("dev", 0.7);
+                defaultRoleDistribution.put("qa", 0.3);
+
+                roleDistribution.put(taskType, defaultRoleDistribution);
+            }
+        }
+
+        effortResponse.setRoleDistribution(roleDistribution);
+        return effortResponse;
+    }
+
+    private int getDefaultStoryPoints(String role) {
+        // Default values as specified in the requirements
+        Map<String, Integer> defaults = new HashMap<>();
+        defaults.put("sse", 7);
+        defaults.put("se", 5);
+        defaults.put("ase", 3);
+        defaults.put("sqa", 7);
+        defaults.put("qa", 5);
+        defaults.put("aqa", 3);
+        defaults.put("sde", 8);
+        defaults.put("de", 6);
+        defaults.put("ade", 4);
+        defaults.put("sba", 7);
+        defaults.put("ba", 4);
+
+        return defaults.getOrDefault(role, 5); // Default to 5 if role not found
     }
 
     @Override
