@@ -301,6 +301,7 @@ public class ProjectServiceImpl implements ProjectService {
         EffortCombinedCallResponse combinedCallResponse = new EffortCombinedCallResponse();
         combinedCallResponse.setEffort(mlResponse.getBody());
         combinedCallResponse.setResources(mlResponse2.getBody());
+        combinedCallResponse.setRoles(mlResponse3.getBody().getRoles());
         advanceDetailsRepository.save(convertToAdvanceModel(advanceDetailsDTO));
 
         return combinedCallResponse;
