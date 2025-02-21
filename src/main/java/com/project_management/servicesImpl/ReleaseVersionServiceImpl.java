@@ -133,7 +133,6 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
         if (task.getAssignedUser() != null) {
             taskDTO.setAssignedUserId(task.getAssignedUser().getId());
         }
-
         if (task.getSubTasks() != null && !task.getSubTasks().isEmpty()) {
             List<SubTaskDTO> subTaskDTOs = task.getSubTasks().stream()
                     .map(this::convertSubTaskToDTO)

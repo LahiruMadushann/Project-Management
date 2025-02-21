@@ -13,6 +13,7 @@ public class TaskDTO {
     private Long id;
     private Long releaseVersionId;
     private RoleCategory roleCategory;
+    private String roleName;
     private String name;
     private Long createUserId;
     private Long assignedUserId;

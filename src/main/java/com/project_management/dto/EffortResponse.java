@@ -8,18 +8,29 @@ import java.util.Map;
 
 @Data
 public class EffortResponse {
-    @JsonProperty("total_effort")
-    private int totalEffort = 3000;
+    private int total_effort;
+    private Map<String, Integer> tasks;
+    private Map<String, Map<String, Double>> role_distribution;
+    private Map<String, Integer> max_story_points;
+    private int avg_hours_per_story_point;
 
-    @JsonProperty("tasks")
-    private Map<String, Integer> tasks = new HashMap<>();
+    public void setTotal_effort(int total_effort) {
+        this.total_effort = total_effort;
+    }
 
-    @JsonProperty("role_distribution")
-    private Map<String, Map<String, Double>> roleDistribution = new HashMap<>();
+    public void setTasks(Map<String, Integer> tasks) {
+        this.tasks = tasks;
+    }
 
-    @JsonProperty("max_story_points")
-    private Map<String, Integer> maxStoryPoints = new HashMap<>();
+    public void setRole_distribution(Map<String, Map<String, Double>> role_distribution) {
+        this.role_distribution = role_distribution;
+    }
 
-    @JsonProperty("avg_hours_per_story_point")
-    private int avgHoursPerStoryPoint = 1;
+    public void setMax_story_points(Map<String, Integer> max_story_points) {
+        this.max_story_points = max_story_points;
+    }
+
+    public void setAvg_hours_per_story_point(int avg_hours_per_story_point) {
+        this.avg_hours_per_story_point = avg_hours_per_story_point;
+    }
 }
