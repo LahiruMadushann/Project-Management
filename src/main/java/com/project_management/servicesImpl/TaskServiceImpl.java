@@ -8,10 +8,13 @@ import com.project_management.repositories.EmployeeRepository;
 import com.project_management.repositories.ReleaseVersionRepository;
 import com.project_management.repositories.TaskRepository;
 import com.project_management.repositories.UserRepository;
+import com.project_management.security.jwt.JwtTokenProvider;
 import com.project_management.services.SubTaskService;
 import com.project_management.services.TaskService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +43,9 @@ public class TaskServiceImpl implements TaskService {
 
     @Autowired
     private SubTaskService subTaskService;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
 
 
 
@@ -130,9 +136,27 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public List<TaskDTO> getAllTasks() {
-        return taskRepository.findAll().stream()
+        String role= null;
+        List<TaskDTO> tasks = taskRepository.findAll().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getCredentials() != null) {
+            String token = (String) authentication.getCredentials();
+            role = jwtTokenProvider.getRole(token);
+            String currentUserId = String.valueOf(jwtTokenProvider.getUserId(token));
+
+            if (role != null && !role.equals("ADMIN")) {
+                return tasks.stream()
+                        .filter(task -> Optional.ofNullable(task.getAssignedUserId())
+                                .map(id -> id.toString().equals(currentUserId))
+                                .orElse(false))
+                        .collect(Collectors.toList());
+
+            }
+        }
+        return tasks;
     }
 
     @Override

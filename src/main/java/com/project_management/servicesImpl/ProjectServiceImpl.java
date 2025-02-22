@@ -8,13 +8,17 @@ import com.project_management.repositories.AdvanceDetailsRepository;
 import com.project_management.repositories.CalculationResultRepository;
 import com.project_management.repositories.ProjectRepository;
 import com.project_management.repositories.ProjectResourceConfigRepository;
+import com.project_management.security.jwt.JwtTokenProvider;
 import com.project_management.services.PerfectEmployeeService;
 import com.project_management.services.ProjectService;
 import com.project_management.services.ReleaseVersionService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -47,6 +51,10 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Autowired
     RestTemplate restTemplate;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
 
     @Value("${ml.service.url.effort}")
     private String effortURL;
@@ -83,9 +91,28 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public List<ProjectDTO> getAllProjects() {
-        return projectRepository.findAll().stream()
+        String role= null;
+
+        List<ProjectDTO> projects =  projectRepository.findAll().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getCredentials() != null) {
+            String token = (String) authentication.getCredentials();
+            role = jwtTokenProvider.getRole(token);
+            String currentUserId = String.valueOf(jwtTokenProvider.getUserId(token));
+
+            if (role != null && !role.equals("ADMIN")) {
+                return projects.stream()
+                        .filter(project -> project.getCreateUserId().toString().equals(currentUserId))
+                        .collect(Collectors.toList());
+            }
+        }
+
+
+
+
+        return projects;
     }
 
     @Override

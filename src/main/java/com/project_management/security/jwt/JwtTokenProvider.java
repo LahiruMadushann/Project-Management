@@ -76,4 +76,12 @@ public class JwtTokenProvider {
             throw new InvalidJwtAuthenticationException("Expired or invalid JWT token");
         }
     }
+
+    public String getRole(String token) {
+        return Jwts.parser()
+                .setSigningKey(getEncodedSecretKey())
+                .parseClaimsJws(token)
+                .getBody()
+                .get("role", String.class);
+    }
 }

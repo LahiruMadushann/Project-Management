@@ -10,11 +10,14 @@ import com.project_management.models.SubTask;
 import com.project_management.models.Task;
 import com.project_management.repositories.ProjectRepository;
 import com.project_management.repositories.ReleaseVersionRepository;
+import com.project_management.security.jwt.JwtTokenProvider;
 import com.project_management.services.ReleaseVersionService;
 import com.project_management.services.TaskService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +36,9 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
 
     @Autowired
     private TaskService taskService;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
 
     @Override
     public ReleaseVersionDTO createReleaseVersion(ReleaseVersionDTO releaseVersionDTO) {
@@ -74,9 +80,33 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
 
     @Override
     public List<ReleaseVersionDTO> getAllReleaseVersions() {
-        return releaseVersionRepository.findAll().stream()
+        String role= null;
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        List<ReleaseVersionDTO> releaseVersions = releaseVersionRepository.findAll().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+        if (authentication != null && authentication.getCredentials() != null) {
+            String token = (String) authentication.getCredentials();
+            role = jwtTokenProvider.getRole(token);
+            Long currentUserId = jwtTokenProvider.getUserId(token);
+
+            if (role != null && !role.equals("ADMIN")) {
+                 return releaseVersions.stream()
+                        .filter(releaseVersion -> releaseVersion.getTasks() != null)
+                        .filter(releaseVersion -> releaseVersion.getTasks().stream()
+                                .anyMatch(task -> task.getSubTaskList() != null &&
+                                        task.getSubTaskList().stream()
+                                                .anyMatch(subTask -> subTask.getAssignedUserId() != null &&
+                                                        subTask.getAssignedUserId().equals(currentUserId))
+                                )
+                        )
+                        .collect(Collectors.toList());
+
+            }
+        }
+
+        return releaseVersions;
     }
 
     @Override

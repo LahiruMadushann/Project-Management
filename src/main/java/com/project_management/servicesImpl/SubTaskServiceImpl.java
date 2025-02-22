@@ -10,15 +10,19 @@ import com.project_management.models.enums.TaskStatus;
 import com.project_management.repositories.SubTaskRepository;
 import com.project_management.repositories.TaskRepository;
 import com.project_management.repositories.UserRepository;
+import com.project_management.security.jwt.JwtTokenProvider;
 import com.project_management.services.SubTaskService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,6 +36,10 @@ public class SubTaskServiceImpl implements SubTaskService {
 
     @Autowired
     private TaskRepository taskRepository;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
+
 
     @Override
     public SubTaskDTO createSubTask(SubTaskDTO subTaskDTO) {
@@ -62,9 +70,27 @@ public class SubTaskServiceImpl implements SubTaskService {
 
     @Override
     public List<SubTaskDTO> getAllSubTasks() {
-        return subTaskRepository.findAll().stream()
+        String role= null;
+        List<SubTaskDTO> subTasks = subTaskRepository.findAll().stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getCredentials() != null) {
+            String token = (String) authentication.getCredentials();
+            role = jwtTokenProvider.getRole(token);
+            String currentUserId = String.valueOf(jwtTokenProvider.getUserId(token));
+
+            if (role != null && !role.equals("ADMIN")) {
+                return subTasks.stream()
+                        .filter(task -> Optional.ofNullable(task.getAssignedUserId())
+                                .map(id -> id.toString().equals(currentUserId))
+                                .orElse(false))
+                        .collect(Collectors.toList());
+
+            }
+        }
+        return subTasks;
     }
 
     @Override
