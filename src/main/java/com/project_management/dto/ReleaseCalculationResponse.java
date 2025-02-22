@@ -11,7 +11,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ReleaseCalculationResponse {
-    private int totalEffort;
+    private Double totalEffort;
     private Map<String, Integer> tasks;
     private Map<String, Map<String, Double>> roleDistribution;
     private Map<String, Integer> maxStoryPoints;

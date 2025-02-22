@@ -6,9 +6,5 @@ public enum RoleCategory {
     devops,
     pm,
     qa,
-    se,
-    ui,
-    sse,
-    sqa,
-    aqa
+    ui
 }

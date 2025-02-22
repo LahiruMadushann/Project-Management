@@ -6,10 +6,9 @@ public class CalculateHeadRequestDTO {
     private double total_effort;
     private Map<String, Integer> tasks;
     private Map<String, Map<String, Double>> role_distribution;
-    private Map<String, Double> max_story_points;
+    private Map<String, Integer> max_story_points;
     private double avg_hours_per_story_point;
 
-    // Getters and Setters
     public double getTotal_effort() {
         return total_effort;
     }
@@ -34,11 +33,11 @@ public class CalculateHeadRequestDTO {
         this.role_distribution = role_distribution;
     }
 
-    public Map<String, Double> getMax_story_points() {
+    public Map<String, Integer> getMax_story_points() {
         return max_story_points;
     }
 
-    public void setMax_story_points(Map<String, Double> max_story_points) {
+    public void setMax_story_points(Map<String, Integer> max_story_points) {
         this.max_story_points = max_story_points;
     }
 

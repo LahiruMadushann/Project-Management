@@ -5,6 +5,7 @@ import com.project_management.models.*;
 import com.project_management.models.enums.ProjectStatus;
 import com.project_management.models.enums.RoleCategory;
 import com.project_management.repositories.AdvanceDetailsRepository;
+import com.project_management.repositories.CalculationResultRepository;
 import com.project_management.repositories.ProjectRepository;
 import com.project_management.repositories.ProjectResourceConfigRepository;
 import com.project_management.services.PerfectEmployeeService;
@@ -42,6 +43,9 @@ public class ProjectServiceImpl implements ProjectService {
     private ProjectResourceConfigRepository projectResourceConfigRepository;
 
     @Autowired
+    private CalculationResultRepository calculationResultRepository;
+
+    @Autowired
     RestTemplate restTemplate;
 
     @Value("${ml.service.url.effort}")
@@ -56,8 +60,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Value("${ml.service.url.predictRoles}")
     private String predictRoles;
 
-    private static final int DEFAULT_TOTAL_EFFORT = 3000;
-    private static final int DEFAULT_AVG_HOURS_PER_STORY_POINT = 8;
+    public Double effortValue = (double) 0;
 
     @Override
     public ProjectDTO createProject(ProjectDTO projectDTO) {
@@ -180,7 +183,7 @@ public class ProjectServiceImpl implements ProjectService {
             throw new RuntimeException("Failed to get prediction from ML service: " +
                     mlResponse.getStatusCode());
         }
-
+        effortValue = mlResponse.getBody().getEffort();
         ResourceMLRequestDTO requestDto = new ResourceMLRequestDTO();
         requestDto.setDomain(advanceDetailsDTO.getDomain());
         requestDto.setMethodology(advanceDetailsDTO.getMethodology()==2?"Agile":"Waterfall");
@@ -225,13 +228,37 @@ public class ProjectServiceImpl implements ProjectService {
         // Save using JPA repository
         projectResourceConfigRepository.save(projectResourceConfig);
 
-        ReleaseVersionDTO releaseVersion = releaseVersionService.getReleaseVersionById(advanceDetailsDTO.getProjectId());
+//        ReleaseVersionDTO releaseVersion = releaseVersionService.getReleaseVersionById(advanceDetailsDTO.getProjectId());
         List<PerfectEmployeeDTO> perfectEmployees = perfectEmployeeService.getAllPerfectEmployees();
         var distribution = calculateRoleDistribution(perfectEmployees);
-        var cal = calculateReleaseDetails(advanceDetailsDTO);
+        var calculationHeader = calculateReleaseDetails(advanceDetailsDTO);
+        CalculateHeadRequestDTO requestDto2 = new CalculateHeadRequestDTO();
+
+        requestDto2.setTotal_effort(calculationHeader.getTotalEffort());
+        requestDto2.setTasks(calculationHeader.getTasks());
+        requestDto2.setRole_distribution(calculationHeader.getRoleDistribution());
+        requestDto2.setMax_story_points(calculationHeader.getMaxStoryPoints());
+        requestDto2.setAvg_hours_per_story_point(calculationHeader.getAvgHoursPerStoryPoint());
+
+        HttpEntity<CalculateHeadRequestDTO> entity3 = new HttpEntity<>(requestDto2, headers);
+
+
+        ResponseEntity<CalculateMLResponseDTO> mlResponse3 = restTemplate.exchange(
+                calculateHeadsURL,
+                HttpMethod.POST,
+                entity3,
+                CalculateMLResponseDTO.class
+        );
+
+        if (!mlResponse3.getStatusCode().is2xxSuccessful() || mlResponse3.getBody() == null) {
+            throw new RuntimeException("Failed to get prediction from ML service: " +
+                    mlResponse3.getStatusCode());
+        }
+        saveCalculation(mlResponse3.getBody(),advanceDetailsDTO.getProjectId());
         EffortCombinedCallResponse combinedCallResponse = new EffortCombinedCallResponse();
         combinedCallResponse.setEffort(mlResponse.getBody());
         combinedCallResponse.setResources(mlResponse2.getBody());
+        combinedCallResponse.setCalculateHeadRequest(mlResponse3.getBody());
         advanceDetailsRepository.save(convertToAdvanceModel(advanceDetailsDTO));
 
         return combinedCallResponse;
@@ -246,7 +273,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     private ReleaseCalculationResponse buildResponse(ReleaseVersionDTO releaseVersion, RoleDistributionResponse distribution) {
         ReleaseCalculationResponse response = new ReleaseCalculationResponse();
-        response.setTotalEffort(3000);
+        response.setTotalEffort(effortValue);
         response.setTasks(calculateTaskCounts(releaseVersion));
 
         if (distribution != null) {
@@ -254,7 +281,7 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         response.setMaxStoryPoints(calculateMaxStoryPoints(releaseVersion, distribution));
-        response.setAvgHoursPerStoryPoint(8);
+        response.setAvgHoursPerStoryPoint(1);
         return response;
     }
 
@@ -428,6 +455,32 @@ public class ProjectServiceImpl implements ProjectService {
         dto.setUpdatedAt(project.getUpdatedAt());
         dto.setReleaseVersions(releaseVersionService.getReleaseVersionsByProjectIdNew(project.getId()));
         return dto;
+    }
+
+    public void saveCalculation(CalculateMLResponseDTO dto, Long projectId) {
+        CalculationResult result = new CalculationResult();
+        result.setProjectId(projectId);
+
+        dto.getCategories().forEach((categoryName, categoryDto) -> {
+            CategoryEntity categoryEntity = new CategoryEntity();
+            categoryEntity.setCategoryName(categoryName);
+            categoryEntity.setCalculationResult(result);
+
+            categoryDto.getSubCategories().forEach((subCategoryName, effortDto) -> {
+                EffortDetailsEntity effortEntity = new EffortDetailsEntity();
+                effortEntity.setSubCategoryName(subCategoryName);
+                effortEntity.setEffort(effortDto.getEffort());
+                effortEntity.setHeadsNeeded(effortDto.getHeads_needed());
+                effortEntity.setStoryPoints(effortDto.getStory_points());
+                effortEntity.setCategory(categoryEntity);
+
+                categoryEntity.getSubCategories().put(subCategoryName, effortEntity);
+            });
+
+            result.getCategories().put(categoryName, categoryEntity);
+        });
+
+        calculationResultRepository.save(result);
     }
 
 }
