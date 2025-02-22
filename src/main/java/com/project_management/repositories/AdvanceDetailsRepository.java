@@ -6,4 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AdvanceDetailsRepository extends JpaRepository<AdvanceDetails, Long> {
     AdvanceDetails findByProjectId(Long projectId);
+    AdvanceDetails findTopByProjectIdOrderByIdDesc(Long projectId);
 }

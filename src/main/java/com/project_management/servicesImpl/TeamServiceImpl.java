@@ -72,7 +72,7 @@ public class TeamServiceImpl implements TeamService {
         int duration = 2;
 
 
-        AdvanceDetails advanceDetails = advanceDetailsRepository.findByProjectId(findTeamDTO.getProjectId());
+        AdvanceDetails advanceDetails = advanceDetailsRepository.findTopByProjectIdOrderByIdDesc(findTeamDTO.getProjectId());
         ProjectDTO project = projectService.getProjectById(findTeamDTO.getProjectId());
 
         // Get all employees and their KPIs
@@ -169,6 +169,12 @@ public class TeamServiceImpl implements TeamService {
         requestDto.setDevOpsCount(devopsCount);
         requestDto.setMiscellaneousExpenses(advanceDetails.getOtherExpenses());
         requestDto.setProfitMargin(advanceDetails.getExpectedProfit());
+        requestDto.setResourceCloud(latestConfig.getCloud() ? 1: 0);
+        requestDto.setResourceAutomation(latestConfig.getAutomation() ? 1: 0);
+        requestDto.setResourceDb(latestConfig.getDb() ? 1: 0);
+        requestDto.setResourceSecurity(latestConfig.getSecurity() ? 1: 0);
+        requestDto.setResourceIdeTools(latestConfig.getIde() ? 1: 0);
+        requestDto.setResourceCollaboration(latestConfig.getCollaboration() ? 1: 0);
 
         // Prepare headers
         HttpHeaders headers = new HttpHeaders();
