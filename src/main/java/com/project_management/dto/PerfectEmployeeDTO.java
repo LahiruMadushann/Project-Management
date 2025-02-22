@@ -15,7 +15,6 @@ public class PerfectEmployeeDTO {
     private String employeeId;
     private String roleName;
     private Long createdByUserId;
-    private String roleShortName;
     private Integer roleDistributionValue;
     private RoleCategory roleCategory;
     private List<PerfectEmployeeSkillDTO> skills;

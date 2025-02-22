@@ -21,9 +21,6 @@ public class PerfectEmployee {
     @Column(name = "p_role_name", nullable = false)
     private String roleName;
 
-    @Column(name = "p_role_short_name", nullable = false)
-    private String roleShortName;
-
     @Column(name = "p_role_distribution_value", nullable = false)
     private Integer roleDistributionValue;
 
