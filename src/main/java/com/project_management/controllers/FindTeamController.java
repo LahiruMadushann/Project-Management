@@ -1,9 +1,6 @@
 package com.project_management.controllers;
 
-import com.project_management.dto.CombinedFindTeamResponseDto;
-import com.project_management.dto.FindTeamDTO;
-import com.project_management.dto.TeamMemberUpdateDTO;
-import com.project_management.dto.TeamUpdateDTO;
+import com.project_management.dto.*;
 import com.project_management.models.TeamAssignment;
 import com.project_management.services.TeamService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +35,7 @@ public class FindTeamController {
     @GetMapping("/project/{projectId}")
     public ResponseEntity<?> getTeamByProject(@PathVariable Long projectId) {
         try {
-            List<TeamAssignment> team = teamService.getTeamByProjectId(projectId);
+            List<TeamAssignmentDTO> team = teamService.getTeamByProjectId(projectId);
             return ResponseEntity.ok(team);
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -48,6 +45,7 @@ public class FindTeamController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
         }
     }
+
 
     @PutMapping("/update")
     public ResponseEntity<?> updateTeam(@RequestBody TeamUpdateDTO updateDTO) {

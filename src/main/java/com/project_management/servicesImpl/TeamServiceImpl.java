@@ -43,6 +43,18 @@ public class TeamServiceImpl implements TeamService {
     private ProjectService projectService;
 
     @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private TaskRepository taskRepository;
+
+    @Autowired
+    private SubTaskRepository subTaskRepository;
+
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
+    @Autowired
     private RestTemplate restTemplate;
 
     @Value("${ml.service.url.budget}")
@@ -332,8 +344,41 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    public List<TeamAssignment> getTeamByProjectId(Long projectId) {
-        return teamAssignmentRepository.findByIdProjectId(projectId);
+    public List<TeamAssignmentDTO> getTeamByProjectId(Long projectId) {
+        List<TeamAssignment> teamAssignments = teamAssignmentRepository.findByIdProjectId(projectId);
+
+        return teamAssignments.stream().map(assignment -> {
+            TeamAssignmentDTO dto = new TeamAssignmentDTO();
+            dto.setId(assignment.getId());
+            dto.setEmployeeName(assignment.getEmployeeName());
+            dto.setRoleName(assignment.getRoleName());
+            dto.setCreatedAt(assignment.getCreatedAt());
+            dto.setUpdatedAt(assignment.getUpdatedAt());
+
+            String employeeId = assignment.getId().getEmployeeId();
+            Employee employee = employeeRepository.findByEmployeeId(employeeId)
+                    .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+            User user = employee.getUser();
+            if (user != null) {
+                Long userId = user.getId();
+
+                long taskCount = taskRepository.countByAssignedUserId(userId);
+                long subTaskCount = subTaskRepository.countByAssignedUserId(userId);
+                long totalAssignments = taskCount + subTaskCount;
+
+                Integer maxAssessedCount = employee.getMaximumAssessedCount();
+                if (maxAssessedCount != null && maxAssessedCount > 0) {
+                    double percentage = ((double) totalAssignments / maxAssessedCount) * 100;
+                    double roundedPercentage = Math.min(Math.round(percentage * 100.0) / 100.0, 100.00);
+                    dto.setExhaustedPercentage(roundedPercentage);
+                }
+
+            }
+
+            return dto;
+        }).collect(Collectors.toList());
     }
+
 }
 

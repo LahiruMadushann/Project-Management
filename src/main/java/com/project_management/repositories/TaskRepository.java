@@ -12,4 +12,5 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findByReleaseVersion(ReleaseVersion releaseVersion);
     List<Task> findByAssignedUserId(Long userId);
     List<Task> findByReleaseVersionId(Long releaseVersionId);
+    long countByAssignedUserId(Long userId);
 }
