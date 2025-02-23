@@ -20,4 +20,6 @@ public class ReleaseCalculationResponse {
     public static ReleaseCalculationResponse create() {
         return new ReleaseCalculationResponse();
     }
+
+
 }

@@ -260,6 +260,15 @@ public class ProjectServiceImpl implements ProjectService {
         var distribution = calculateRoleDistribution(perfectEmployees);
         var calculationHeader = calculateReleaseDetails(advanceDetailsDTO);
         CalculateHeadRequestDTO requestDto2 = new CalculateHeadRequestDTO();
+        Map<String, Integer> transformedTasks = distribution.getRoleDistributions()
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        entry -> entry.getValue().size()
+                ));
+
+        calculationHeader.setTasks(transformedTasks);
 
         requestDto2.setTotal_effort(calculationHeader.getTotalEffort());
         requestDto2.setTasks(calculationHeader.getTasks());

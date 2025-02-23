@@ -220,6 +220,113 @@ public class TaskCreationFromMLService {
         return createdTasks;
     }
 
+    public List<TaskDTO> assignAutoUsers(Long projectId) {
+        List<TaskDTO> existingTasks = taskService.getAllTasks();
+        List<TaskDetail> allTaskDetails = existingTasks.stream().map((task) -> {
+            TaskDetail taskDetail = new TaskDetail();
+            taskDetail.setTaskName(task.getName());
+            taskDetail.setPriorityLevel(task.getPriorityLevel());
+            taskDetail.setEstimatedHours(1);
+            taskDetail.setSubtasks(task.getSubTaskList().stream().map((subTask) -> {
+                SubTaskDetail subTaskDetail = new SubTaskDetail();
+                subTaskDetail.setSubtaskName(subTask.getName());
+                subTaskDetail.setTag(subTask.getTags());
+                subTaskDetail.setEstimatedHours(1);
+                return subTaskDetail;
+            }).collect(Collectors.toList()));
+            return taskDetail;
+        }).toList();
+
+        Set<Long> assignedUsers = new HashSet<>();
+
+        for (int i = 0; i < existingTasks.size(); i++) {
+            TaskDTO existingTaskDTO = existingTasks.get(i);
+            TaskDetail taskDetail = allTaskDetails.get(i);
+
+            // Fetch existing task from repository
+            Task existingTask = taskRepository.findById(existingTaskDTO.getId())
+                    .orElseThrow(() -> new RuntimeException("Task not found with id: " + existingTaskDTO.getId()));
+
+            User mainTaskAssignedUser = null;
+            int maxSubtaskWeight = 0;
+
+            // Update subtasks
+            for (int j = 0; j < existingTask.getSubTasks().size(); j++) {
+                SubTask existingSubTask = existingTask.getSubTasks().get(j);
+                SubTaskDetail subTaskDetail = taskDetail.getSubtasks().get(j);
+
+                try {
+                    String roleTag = subTaskDetail.getTag().trim().toLowerCase();
+                    RoleCategory requiredRole = RoleCategory.valueOf(roleTag);
+
+                    // Find suitable employee
+                    List<Employee> exactMatches = employeeRepository.findTeamEmployees(projectId).stream()
+                            .filter(emp -> emp.getRoleCategory() == requiredRole &&
+                                    Objects.equals(emp.getDifficultyLevel(), existingTask.getDifficultyLevel()) &&
+                                    emp.getUser() != null && !assignedUsers.contains(emp.getUser().getId()))
+                            .collect(Collectors.toList());
+
+                    User assignedUser = null;
+                    Employee selectedEmployee = null;
+
+                    if (!exactMatches.isEmpty()) {
+                        selectedEmployee = exactMatches.get(new Random().nextInt(exactMatches.size()));
+                    } else {
+                        List<Employee> closestMatches = employeeRepository.findTeamEmployees(projectId).stream()
+                                .filter(emp -> emp.getRoleCategory() == requiredRole &&
+                                        emp.getUser() != null && !assignedUsers.contains(emp.getUser().getId()))
+                                .sorted(Comparator.comparingInt(emp ->
+                                        Math.abs(emp.getDifficultyLevel() - existingTask.getDifficultyLevel())))
+                                .limit(5)
+                                .collect(Collectors.toList());
+
+                        if (!closestMatches.isEmpty()) {
+                            selectedEmployee = closestMatches.get(0);
+                            log.info("No exact match found. Selected closest match for subtask '{}': employee '{}' with difficulty level {}",
+                                    subTaskDetail.getSubtaskName(),
+                                    selectedEmployee.getEmployeeName(),
+                                    selectedEmployee.getDifficultyLevel());
+                        } else {
+                            log.warn("No suitable employees found for subtask '{}' with role '{}'",
+                                    subTaskDetail.getSubtaskName(), requiredRole);
+                        }
+                    }
+
+                    if (selectedEmployee != null) {
+                        assignedUser = selectedEmployee.getUser();
+
+                        int subtaskWeight = (int) Math.ceil(subTaskDetail.getEstimatedHours());
+                        if (subtaskWeight > maxSubtaskWeight) {
+                            mainTaskAssignedUser = assignedUser;
+                            maxSubtaskWeight = subtaskWeight;
+                        }
+
+                        log.info("Assigned subtask '{}' to employee '{}' with role '{}'",
+                                subTaskDetail.getSubtaskName(),
+                                selectedEmployee.getEmployeeName(),
+                                selectedEmployee.getRoleCategory());
+
+                        assignedUsers.add(assignedUser.getId());
+
+                        existingSubTask.setAssignedUser(assignedUser);
+                        existingSubTask.setUpdatedAt(LocalDateTime.now());
+                    }
+
+                } catch (IllegalArgumentException e) {
+                    log.error("Invalid role category from ML response: {}", subTaskDetail.getTag());
+                    throw new RuntimeException("Invalid role category: " + subTaskDetail.getTag());
+                }
+            }
+
+            existingTask.setAssignedUser(mainTaskAssignedUser);
+            existingTask.setUpdatedAt(LocalDateTime.now());
+
+            taskRepository.save(existingTask);
+        }
+
+        return taskService.getAllTasks();
+    }
+
     // Create a new release version
     private ReleaseVersion createNewReleaseVersion(ReleaseVersion oldVersion, Long createUserId) {
         ReleaseVersion newVersion = new ReleaseVersion();

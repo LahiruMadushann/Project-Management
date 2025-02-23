@@ -170,88 +170,90 @@ public class TeamServiceImpl implements TeamService {
                     return l;
                 }));
         ProjectResourceConfig latestConfig = reversedList.get(0);
+        ProjectBudgetGraphDto graphDto = new ProjectBudgetGraphDto();
+        if(advanceDetails != null) {
+            BudgetMLRequestDto requestDto = new BudgetMLRequestDto();
+            requestDto.setDomain(advanceDetails.getDomain());
+            requestDto.setMethodology(advanceDetails.getMethodology() == 2 ? "Agile" : "Waterfall");
+            requestDto.setDevCount(devCount);
+            requestDto.setQaCount(qaCount);
+            requestDto.setPmCount(pmCount);
+            requestDto.setBaCount(baCount);
+            requestDto.setDevOpsCount(devopsCount);
+            requestDto.setMiscellaneousExpenses(advanceDetails.getOtherExpenses());
+            requestDto.setProfitMargin(advanceDetails.getExpectedProfit());
+            requestDto.setResourceCloud(latestConfig.getCloud() ? 1 : 0);
+            requestDto.setResourceAutomation(latestConfig.getAutomation() ? 1 : 0);
+            requestDto.setResourceDb(latestConfig.getDb() ? 1 : 0);
+            requestDto.setResourceSecurity(latestConfig.getSecurity() ? 1 : 0);
+            requestDto.setResourceIdeTools(latestConfig.getIde() ? 1 : 0);
+            requestDto.setResourceCollaboration(latestConfig.getCollaboration() ? 1 : 0);
 
-        BudgetMLRequestDto requestDto = new BudgetMLRequestDto();
-        requestDto.setDomain(advanceDetails.getDomain());
-        requestDto.setMethodology(advanceDetails.getMethodology()==2?"Agile":"Waterfall");
-        requestDto.setDevCount(devCount);
-        requestDto.setQaCount(qaCount);
-        requestDto.setPmCount(pmCount);
-        requestDto.setBaCount(baCount);
-        requestDto.setDevOpsCount(devopsCount);
-        requestDto.setMiscellaneousExpenses(advanceDetails.getOtherExpenses());
-        requestDto.setProfitMargin(advanceDetails.getExpectedProfit());
-        requestDto.setResourceCloud(latestConfig.getCloud() ? 1: 0);
-        requestDto.setResourceAutomation(latestConfig.getAutomation() ? 1: 0);
-        requestDto.setResourceDb(latestConfig.getDb() ? 1: 0);
-        requestDto.setResourceSecurity(latestConfig.getSecurity() ? 1: 0);
-        requestDto.setResourceIdeTools(latestConfig.getIde() ? 1: 0);
-        requestDto.setResourceCollaboration(latestConfig.getCollaboration() ? 1: 0);
+            // Prepare headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<BudgetMLRequestDto> entity = new HttpEntity<>(requestDto, headers);
 
-        // Prepare headers
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<BudgetMLRequestDto> entity = new HttpEntity<>(requestDto, headers);
+            // Send the request to the ML service
+            ResponseEntity<BudgetMLResponseDto> mlResponse = restTemplate.exchange(
+                    budgetUrl,
+                    HttpMethod.POST,
+                    entity,
+                    BudgetMLResponseDto.class
+            );
 
-        // Send the request to the ML service
-        ResponseEntity<BudgetMLResponseDto> mlResponse = restTemplate.exchange(
-                budgetUrl,
-                HttpMethod.POST,
-                entity,
-                BudgetMLResponseDto.class
-        );
+            // Check the response status and handle errors
+            if (!mlResponse.getStatusCode().is2xxSuccessful() || mlResponse.getBody() == null) {
+                throw new RuntimeException("Failed to get prediction from ML service: " +
+                        mlResponse.getStatusCode());
+            }
 
-        // Check the response status and handle errors
-        if (!mlResponse.getStatusCode().is2xxSuccessful() || mlResponse.getBody() == null) {
-            throw new RuntimeException("Failed to get prediction from ML service: " +
-                    mlResponse.getStatusCode());
-        }
+            fullBudget = mlResponse.getBody().getBudget() * 10;
 
-        fullBudget = mlResponse.getBody().getBudget()*10;
+            salaryWeight = (salary / fullBudget) * 100;
+            profitWeight = advanceDetails.getExpectedProfit();
+            profit = (fullBudget / 100) * profitWeight;
+            misWeight = advanceDetails.getOtherExpenses();
+            mis = (fullBudget / 100) * misWeight;
+            resourcesWeight = fullWeight - (profitWeight + misWeight + salaryWeight);
+            resources = (fullBudget / 100) * resourcesWeight;
 
-        salaryWeight =(salary/fullBudget)  * 100;
-        profitWeight = advanceDetails.getExpectedProfit();
-        profit = (fullBudget/100) * profitWeight;
-        misWeight = advanceDetails.getOtherExpenses();
-        mis = (fullBudget/100) * misWeight;
-        resourcesWeight = fullWeight - ( profitWeight + misWeight + salaryWeight);
-        resources = (fullBudget/100) * resourcesWeight;
-
-        // Create a formatter for 2 decimal places
-        DecimalFormat df = new DecimalFormat("#.##");
+            // Create a formatter for 2 decimal places
+            DecimalFormat df = new DecimalFormat("#.##");
 
 // Format all decimal values before setting them
-        ProjectBudgetGraphDto graphDto = new ProjectBudgetGraphDto();
-        graphDto.setProjectId(project.getId());
-        graphDto.setFullBudget((long) Double.parseDouble(df.format(fullBudget)));
-        graphDto.setFullWeight(Double.parseDouble(df.format(fullWeight)));
-        graphDto.setExpectedBudget(BigDecimal.valueOf(project.getBudget() != null ?
-                Double.parseDouble(df.format(project.getBudget())) : null));
-        graphDto.setProfit(Double.parseDouble(df.format(profit)));
-        graphDto.setProfitWeight(Double.parseDouble(df.format(profitWeight)));
-        graphDto.setSalary(Double.parseDouble(df.format(salary)));
-        graphDto.setSalaryWeigh(Double.parseDouble(df.format(salaryWeight)));
-        graphDto.setOtherExpenses(Double.parseDouble(df.format(mis)));
-        graphDto.setOtherExpensesWight(Double.parseDouble(df.format(misWeight)));
-        graphDto.setResources(Double.parseDouble(df.format(resources)));
-        graphDto.setResourcesWeight(Double.parseDouble(df.format(resourcesWeight)));
-        graphDto.setUnassigned(Double.parseDouble(df.format(unassigned)));
-        graphDto.setUnassginedWeight(Double.parseDouble(df.format(unassginedWeight)));
+//            ProjectBudgetGraphDto graphDto = new ProjectBudgetGraphDto();
+            graphDto.setProjectId(project.getId());
+            graphDto.setFullBudget((long) Double.parseDouble(df.format(fullBudget)));
+            graphDto.setFullWeight(Double.parseDouble(df.format(fullWeight)));
+            graphDto.setExpectedBudget(BigDecimal.valueOf(project.getBudget() != null ?
+                    Double.parseDouble(df.format(project.getBudget())) : null));
+            graphDto.setProfit(Double.parseDouble(df.format(profit)));
+            graphDto.setProfitWeight(Double.parseDouble(df.format(profitWeight)));
+            graphDto.setSalary(Double.parseDouble(df.format(salary)));
+            graphDto.setSalaryWeigh(Double.parseDouble(df.format(salaryWeight)));
+            graphDto.setOtherExpenses(Double.parseDouble(df.format(mis)));
+            graphDto.setOtherExpensesWight(Double.parseDouble(df.format(misWeight)));
+            graphDto.setResources(Double.parseDouble(df.format(resources)));
+            graphDto.setResourcesWeight(Double.parseDouble(df.format(resourcesWeight)));
+            graphDto.setUnassigned(Double.parseDouble(df.format(unassigned)));
+            graphDto.setUnassginedWeight(Double.parseDouble(df.format(unassginedWeight)));
 
-        graphDto.setExpectedBudget(project.getPredictedBudgetForResources());
-        graphDto.setBudgetRisk(
-                BigDecimal.valueOf(fullBudget).compareTo(project.getBudget()) < 0 ? "LOW" : "HIGH"
-        );
+            graphDto.setExpectedBudget(project.getPredictedBudgetForResources());
+            graphDto.setBudgetRisk(
+                    BigDecimal.valueOf(fullBudget).compareTo(project.getBudget()) < 0 ? "LOW" : "HIGH"
+            );
 
-
+        }
 
         CombinedFindTeamResponseDto combinedFindTeamResponseDto = new CombinedFindTeamResponseDto();
         combinedFindTeamResponseDto.setEmployees(teamAssignmentRepository.saveAll(selectedTeam));
-        combinedFindTeamResponseDto.setGraph(graphDto);
+        if (advanceDetails != null) {
+            combinedFindTeamResponseDto.setGraph(graphDto);
 
-        project.setPredictedBudgetForResources(BigDecimal.valueOf(resources));
-        projectService.updateProject(project.getId(),project);
-
+            project.setPredictedBudgetForResources(BigDecimal.valueOf(resources));
+            projectService.updateProject(project.getId(), project);
+        }
         // Save all team assignments
         return combinedFindTeamResponseDto;
     }

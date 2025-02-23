@@ -67,6 +67,16 @@ public class TaskController {
         }
     }
 
+    @PatchMapping("/auto-assign")
+    public ResponseEntity<?> addAssignUsers(@RequestParam Integer projectId) {
+        try {
+           List<TaskDTO> tasks = taskCreationFromMLService.assignAutoUsers(Long.valueOf(projectId));
+           return ResponseEntity.ok(tasks);
+        } catch (Exception e) {
+            return handleException(e);
+        }
+    }
+
     @GetMapping("/release-version/{releaseVersionId}")
     public ResponseEntity<?> getTasksByReleaseVersionId(@PathVariable Long releaseVersionId) {
         try {
