@@ -1,10 +1,8 @@
 package com.project_management.controllers;
 
-import com.project_management.dto.AdvanceDetailsDTO;
-import com.project_management.dto.EffortCombinedCallResponse;
-import com.project_management.dto.ProjectDTO;
-import com.project_management.dto.ProjectDetailsDTO;
+import com.project_management.dto.*;
 import com.project_management.models.AdvanceDetails;
+import com.project_management.models.ProjectBudget;
 import com.project_management.security.utils.SecurityUtil;
 import com.project_management.services.ProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -125,6 +123,12 @@ public class ProjectController {
     public ResponseEntity<AdvanceDetails> getAdvanceDetails(@PathVariable Long projectId) {
         AdvanceDetails advanceDetails = projectService.getAdvanceDetailsByProjectId(projectId);
         return ResponseEntity.ok().body(advanceDetails);
+    }
+
+    @PostMapping("/advance/save/budget")
+    public ResponseEntity<ProjectBudget> saveBudget1(@RequestBody ProjectBudgetGraphDto requestDto){
+        System.out.println("here");
+        return ResponseEntity.ok().body(projectService.saveBudget(requestDto));
     }
 
 

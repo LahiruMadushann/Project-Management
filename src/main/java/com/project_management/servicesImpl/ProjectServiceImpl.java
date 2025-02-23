@@ -4,10 +4,7 @@ import com.project_management.dto.*;
 import com.project_management.models.*;
 import com.project_management.models.enums.ProjectStatus;
 import com.project_management.models.enums.RoleCategory;
-import com.project_management.repositories.AdvanceDetailsRepository;
-import com.project_management.repositories.CalculationResultRepository;
-import com.project_management.repositories.ProjectRepository;
-import com.project_management.repositories.ProjectResourceConfigRepository;
+import com.project_management.repositories.*;
 import com.project_management.security.jwt.JwtTokenProvider;
 import com.project_management.services.PerfectEmployeeService;
 import com.project_management.services.ProjectService;
@@ -19,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
@@ -48,6 +46,9 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Autowired
     private CalculationResultRepository calculationResultRepository;
+
+    @Autowired
+    private ProjectBudgetRepository projectBudgetRepository;
 
     @Autowired
     RestTemplate restTemplate;
@@ -442,6 +443,24 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public AdvanceDetails getAdvanceDetailsByProjectId(Long projectId) {
         return advanceDetailsRepository.findByProjectId(projectId);
+    }
+
+    @Override
+    public ProjectBudget saveBudget(ProjectBudgetGraphDto dto) {
+        ProjectBudget budget = new ProjectBudget();
+        budget.setBudgetApproved(true);
+        budget.setProjectId(dto.getProjectId());
+        budget.setPredictedBudget((double) dto.getFullBudget());
+        budget.setMisWeight(dto.getOtherExpensesWight());
+        budget.setResourceWeight(dto.getResourcesWeight());
+        budget.setProfitWeight(dto.getProfitWeight());
+        budget.setEmployeeSalaryWeight(dto.getSalaryWeigh());
+
+        Project project = projectRepository.findById(dto.getProjectId()).orElseThrow();
+        project.setPredictedBudgetForResources(BigDecimal.valueOf(dto.getResources()));
+        updateProject(dto.getProjectId(),convertToDTO(project));
+
+        return projectBudgetRepository.save(budget);
     }
 
     @Override

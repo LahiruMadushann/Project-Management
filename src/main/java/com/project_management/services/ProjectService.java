@@ -1,10 +1,8 @@
 package com.project_management.services;
 
-import com.project_management.dto.AdvanceDetailsDTO;
-import com.project_management.dto.EffortCombinedCallResponse;
-import com.project_management.dto.ProjectDTO;
-import com.project_management.dto.ProjectDetailsDTO;
+import com.project_management.dto.*;
 import com.project_management.models.AdvanceDetails;
+import com.project_management.models.ProjectBudget;
 import com.project_management.models.enums.ProjectStatus;
 
 import java.util.List;
@@ -20,5 +18,6 @@ public interface ProjectService {
     List<ProjectDetailsDTO> getProjectsAssignedToUser(Long userId);
     EffortCombinedCallResponse saveAdvance(AdvanceDetailsDTO advanceDetailsDTO);
     AdvanceDetails getAdvanceDetailsByProjectId(Long projectId);
+    ProjectBudget saveBudget(ProjectBudgetGraphDto dto);
     AdvanceDetails getAdvanceDetailsById(Long id);
 }
