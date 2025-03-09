@@ -132,7 +132,7 @@ public class ResourceController {
         }
     }
 
-    @GetMapping("/catalog")
+    @PostMapping("/catalog")
     public ResponseEntity<Map<ResourceType, Map<BudgetTiers, List<Resource>>>> getResourcesByBudget(@RequestBody ResourceCatalogDto dto){
         Map<ResourceType, Map<BudgetTiers, List<Resource>>> list = resourceService.predictResourcesByCategory(dto);
         return ResponseEntity.ok(list);

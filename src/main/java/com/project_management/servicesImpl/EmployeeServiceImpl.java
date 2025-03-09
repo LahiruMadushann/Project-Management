@@ -5,6 +5,7 @@ import com.project_management.dto.EmployeeEducationDTO;
 import com.project_management.dto.EmployeeExperienceDTO;
 import com.project_management.dto.EmployeeSkillDTO;
 import com.project_management.models.*;
+import com.project_management.models.enums.Domain;
 import com.project_management.repositories.EmployeeRepository;
 import com.project_management.repositories.UserRepository;
 import com.project_management.services.EmployeeService;
@@ -49,7 +50,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setUser(associatedUser);;
         employee.setMaximumAssessedCount(employeeDTO.getMaximumAssessedCount());
         employee.setDifficultyLevel(employeeDTO.getDifficultyLevel());
-        employee.setDomain(employeeDTO.getDomain());
+        employee.setDomain(Domain.valueOf(employeeDTO.getDomain()));
 
         // Generate employee ID
         String employeeId = generateUniqueEmployeeId(employeeDTO.getEmployeeName());
@@ -88,7 +89,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
 
         if (employeeDTO.getDomain() != null) {
-            employee.setDomain(employeeDTO.getDomain());
+            employee.setDomain(Domain.valueOf(employeeDTO.getDomain()));
         }
 
 
@@ -232,7 +233,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         dto.setUserId(employee.getUser().getId());
         dto.setMaximumAssessedCount(employee.getMaximumAssessedCount());
         dto.setDifficultyLevel(employee.getDifficultyLevel());
-        dto.setDomain(employee.getDomain());
+        dto.setDomain(String.valueOf(employee.getDomain()));
         dto.setSalary(employee.getSalary());
 
         dto.setSkills(employee.getSkills().stream().map(this::convertToSkillDTO).collect(Collectors.toList()));

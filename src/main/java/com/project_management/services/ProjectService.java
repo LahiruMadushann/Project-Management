@@ -13,7 +13,7 @@ public interface ProjectService {
     List<ProjectDTO> getAllProjects();
     public List<ProjectDTO> getAllProjectsBudgetActive();
     ProjectDTO updateProject(Long id, ProjectDTO projectDTO);
-    ProjectDTO updateProjectStatus(Long projectId, String status);
+    ProjectStatusResponseDto updateProjectStatus(ProjectStatusRequest request);
     void deleteProject(Long id);
     List<ProjectDetailsDTO> getProjectsAssignedToUser(Long userId);
     EffortCombinedCallResponse saveAdvance(AdvanceDetailsDTO advanceDetailsDTO);

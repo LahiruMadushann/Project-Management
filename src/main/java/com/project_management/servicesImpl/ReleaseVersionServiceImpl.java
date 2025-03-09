@@ -57,8 +57,7 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
 
     @Override
     public ReleaseVersionDTO getReleaseVersionById(Long id) {
-        ReleaseVersion releaseVersion = releaseVersionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Project not found"));
+        ReleaseVersion releaseVersion = releaseVersionRepository.findByProjectId(id).get(0);
         return convertToDTO(releaseVersion);
     }
 
@@ -91,7 +90,7 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
             role = jwtTokenProvider.getRole(token);
             Long currentUserId = jwtTokenProvider.getUserId(token);
 
-            if (role != null && !role.equals("ADMIN")) {
+            if (role != null && !role.equals("ROLE_ADMIN")) {
                  return releaseVersions.stream()
                         .filter(releaseVersion -> releaseVersion.getTasks() != null)
                         .filter(releaseVersion -> releaseVersion.getTasks().stream()
@@ -179,7 +178,7 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
         subTaskDTO.setTaskId(subTask.getTask().getId());
 
         if (subTask.getAssignedUser() != null) {
-            subTaskDTO.setAssignedUserId(subTask.getAssignedUser().getId());
+            subTaskDTO.setAssignedUserId(String.valueOf(subTask.getAssignedUser().getId()));
         }
 
         return subTaskDTO;

@@ -57,6 +57,16 @@ public class SubTaskController {
         }
     }
 
+    @GetMapping("/by/tasks/{taskId}")
+    public ResponseEntity<?> getAllSubTasksByTaskId(@PathVariable(name = "taskId") String id) {
+        try {
+            List<SubTaskDTO> subTasks = subTaskService.getAllSubTasksByTaskId(Long.parseLong(id));
+            return ResponseEntity.ok(subTasks);
+        } catch (Exception e) {
+            return handleException(e);
+        }
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updateSubTask(@PathVariable Long id, @RequestBody SubTaskDTO subTaskDTO) {
         try {

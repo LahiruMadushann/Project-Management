@@ -11,7 +11,7 @@ public class SubTaskDTO {
     private Long taskId;
     private String name;
     private Long createUserId;
-    private Long assignedUserId;
+    private String assignedUserId;
     private TaskStatus status;
     private String tags;
     private RoleCategory roleCategory;

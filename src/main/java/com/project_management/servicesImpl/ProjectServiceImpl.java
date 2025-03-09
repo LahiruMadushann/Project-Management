@@ -51,10 +51,19 @@ public class ProjectServiceImpl implements ProjectService {
     private ProjectBudgetRepository projectBudgetRepository;
 
     @Autowired
+    private ReleaseVersionRepository releaseVersionRepository;
+
+    @Autowired
+    private ClientRepository clientRepository;
+
+    @Autowired
     RestTemplate restTemplate;
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private NotificationRespository notificationRepository;
 
 
     @Value("${ml.service.url.effort}")
@@ -103,9 +112,10 @@ public class ProjectServiceImpl implements ProjectService {
             role = jwtTokenProvider.getRole(token);
             String currentUserId = String.valueOf(jwtTokenProvider.getUserId(token));
 
-            if (role != null && !role.equals("ADMIN")) {
+            if (role.equals("ROLE_CLIENT")) {
+                Client client = clientRepository.findByUserId(Long.valueOf(currentUserId));
                 return projects.stream()
-                        .filter(project -> project.getCreateUserId().toString().equals(currentUserId))
+                        .filter(project -> Objects.equals(project.getId(), client.getProjectId()))
                         .collect(Collectors.toList());
             }
         }
@@ -151,21 +161,51 @@ public class ProjectServiceImpl implements ProjectService {
         existingProject.setUpdatedAt(LocalDateTime.now());
 
         Project updatedProject = projectRepository.save(existingProject);
+
+        Notification notification = new Notification();
+        notification.setToId(existingProject.getCreateUserId());
+        notification.setMessage(updatedProject.getName()+" project is UPDATED and " + updatedProject.getStatus());
+        notification.setProjectId(existingProject.getId());
+        notification.setType("yellow");
+
+        notificationRepository.save(notification);
         return convertToDTO(updatedProject);
     }
 
     @Override
-    public ProjectDTO updateProjectStatus(Long projectId, String status) {
-        Project existingProject = projectRepository.findById(projectId)
+    public ProjectStatusResponseDto updateProjectStatus(ProjectStatusRequest request) {
+        Project existingProject = projectRepository.findById(request.getProjectId())
                 .orElseThrow(() -> new RuntimeException("Project not found"));
-        if (status != null) {
-            existingProject.setStatus(ProjectStatus.valueOf(status));
+        if (request.getStatus() != null) {
+            existingProject.setStatus(ProjectStatus.valueOf(request.getStatus()));
         }
 
         existingProject.setUpdatedAt(LocalDateTime.now());
 
         Project updatedProject = projectRepository.save(existingProject);
-        return convertToDTO(updatedProject);
+        ProjectStatusResponseDto res = new ProjectStatusResponseDto();
+        res.setStatus(request.getStatus());
+        boolean editable = existingProject.getStatus().equals(ProjectStatus.PENDING) || existingProject.getStatus().equals(ProjectStatus.RWC);
+        res.setEditable(editable);
+
+        Notification notification = new Notification();
+        notification.setToId(existingProject.getCreateUserId());
+        if(updatedProject.getStatus().equals(ProjectStatus.RWC)){
+            notification.setMessage(updatedProject.getName()+" project is rejected:\n comments: "+request.getComments());
+        }else {
+            notification.setMessage(updatedProject.getName()+" project is " + updatedProject.getStatus());
+        }
+        notification.setProjectId(existingProject.getId());
+
+        if(updatedProject.getStatus().equals(ProjectStatus.REJECTED)){
+            notification.setType("red");
+        }else if(updatedProject.getStatus().equals(ProjectStatus.ACCEPTED)){
+            notification.setType("green");
+        }else{
+            notification.setType("yellow");
+        }
+        notificationRepository.save(notification);
+        return res;
     }
 
     @Override
@@ -525,7 +565,7 @@ public class ProjectServiceImpl implements ProjectService {
                 EffortDetailsEntity effortEntity = new EffortDetailsEntity();
                 effortEntity.setSubCategoryName(subCategoryName);
                 effortEntity.setEffort(effortDto.getEffort());
-                effortEntity.setHeadsNeeded(effortDto.getHeads_needed());
+                effortEntity.setHeadsNeeded(effortDto.getHeadsNeeded());
                 effortEntity.setStoryPoints(effortDto.getStory_points());
                 effortEntity.setCategory(categoryEntity);
 

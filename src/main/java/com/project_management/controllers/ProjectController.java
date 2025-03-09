@@ -96,10 +96,10 @@ public class ProjectController {
         }
     }
 
-    @PutMapping("/{projectId}/{status}")
-    public ResponseEntity<?> updateProjectStatus(@PathVariable Long projectId, @PathVariable(name = "status") String status) {
+    @PutMapping("/status")
+    public ResponseEntity<?> updateProjectStatus(@RequestBody ProjectStatusRequest request) {
         try {
-            ProjectDTO updatedProject = projectService.updateProjectStatus(projectId, status);
+            ProjectStatusResponseDto updatedProject = projectService.updateProjectStatus(request);
             return ResponseEntity.ok(updatedProject);
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());

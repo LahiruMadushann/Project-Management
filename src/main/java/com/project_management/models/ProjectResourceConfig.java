@@ -3,6 +3,8 @@ package com.project_management.models;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 @Entity
 @Table(name = "project_resource_config")
@@ -18,5 +20,6 @@ public class ProjectResourceConfig {
     private Boolean security;
     private Boolean collaboration;
     private Boolean ide;
+    private BigDecimal resourceBudget;
 
 }

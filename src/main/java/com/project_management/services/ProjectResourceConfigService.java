@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface ProjectResourceConfigService {
     ProjectResourceConfig saveConfig(ProjectResourceConfig config);
-    List<ProjectResourceConfig > getConfigByProject(long id);
+    ProjectResourceConfig getConfigByProject(long id);
 }

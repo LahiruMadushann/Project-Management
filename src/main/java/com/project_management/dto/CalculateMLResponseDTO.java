@@ -3,9 +3,11 @@ package com.project_management.dto;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.Data;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CalculateMLResponseDTO {
@@ -35,33 +37,10 @@ public class CalculateMLResponseDTO {
         }
     }
 
+    @Data
     public static class EffortDetails {
         private double effort;
-        private int heads_needed;
+        private int headsNeeded = new Random().nextInt(10) + 1;
         private double story_points;
-
-        public double getEffort() {
-            return effort;
-        }
-
-        public void setEffort(double effort) {
-            this.effort = effort;
-        }
-
-        public int getHeads_needed() {
-            return heads_needed;
-        }
-
-        public void setHeads_needed(int heads_needed) {
-            this.heads_needed = heads_needed;
-        }
-
-        public double getStory_points() {
-            return story_points;
-        }
-
-        public void setStory_points(double story_points) {
-            this.story_points = story_points;
-        }
     }
 }

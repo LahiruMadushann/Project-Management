@@ -1,9 +1,12 @@
 package com.project_management.controllers;
 
 import com.project_management.dto.PerfectEmployeeDTO;
+import com.project_management.dto.SkillsDto;
 import com.project_management.models.PerfectEmployee;
+import com.project_management.models.PerfectEmployeeSkill;
 import com.project_management.models.PerfectRole;
 import com.project_management.models.enums.RoleCategory;
+import com.project_management.repositories.PerfectEmployeeSkillRepository;
 import com.project_management.security.jwt.JwtTokenProvider;
 import com.project_management.services.PerfectEmployeeService;
 import com.project_management.services.PerfectRoleService;
@@ -14,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -31,6 +35,9 @@ public class PerfectEmployeeController {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private PerfectEmployeeSkillRepository skillRepository;
 
     @PostMapping
     public ResponseEntity<?> createPerfectEmployee(@RequestBody PerfectEmployeeDTO perfectEmployeeDTO) {
@@ -145,4 +152,17 @@ public class PerfectEmployeeController {
         e.printStackTrace();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred: " + e.getMessage());
     }
+
+    @GetMapping("/skills")
+    public ResponseEntity<SkillsDto> getSkills(){
+        List<PerfectEmployeeSkill> perSkills = skillRepository.findAllSkills();
+        List<String> list = new ArrayList<>();
+        perSkills.forEach(perfectEmployeeSkill -> {
+            list.add(perfectEmployeeSkill.getSkillName());
+        });
+        SkillsDto dto = new SkillsDto();
+        dto.setSkills(list);
+        return ResponseEntity.status(200).body(dto);
+    }
+
 }

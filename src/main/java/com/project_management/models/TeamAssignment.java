@@ -23,6 +23,9 @@ public class TeamAssignment {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name="kpi")
+    private Double kpi;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

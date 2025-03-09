@@ -345,7 +345,16 @@ public class TaskCreationFromMLService {
     public List<TaskDTO> createTasksFromStories(CreateTasksFromStoriesRequest request) {
         try {
             // Create request body exactly matching Python API expectations
-            if(request.getDifficultyLevel() == null) request.setDifficultyLevel(3);
+            if (request.getDifficultyLevel() == null) {
+                LocalDate deadline = request.getDeadline();
+                if(deadline !=null ||  request != null ){
+                    List<Integer> levels = Arrays.asList(1 << 0, 1 << 1 | 1, 1 << 2 | 1, 1 << 2 | 1 << 1 | 1);
+                    Collections.shuffle(levels, new Random(System.currentTimeMillis()));
+                    request.setDifficultyLevel(levels.get(0));
+                }
+                request.setDifficultyLevel(3);
+            }
+
 
             Map<String, List<Map<String, String>>> mlRequest = new HashMap<>();
             List<Map<String, String>> stories = request.getSimpleUserStories().stream()
@@ -445,7 +454,7 @@ private TaskDTO convertTaskToDTO(Task task) {
         //subTaskDTO.setRoleCategory(RoleCategory.valueOf(subTask.getTags()));
         subTaskDTO.setCreateUserId(subTask.getCreateUserId());
         if (subTask.getAssignedUser() != null) {
-            subTaskDTO.setAssignedUserId(subTask.getAssignedUser().getId());
+            subTaskDTO.setAssignedUserId(String.valueOf(subTask.getAssignedUser().getId()));
         }
         subTaskDTO.setAssignedDate(subTask.getAssignedDate());
         subTaskDTO.setStartDate(subTask.getStartDate());

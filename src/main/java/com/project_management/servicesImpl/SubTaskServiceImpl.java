@@ -3,10 +3,12 @@ package com.project_management.servicesImpl;
 import com.project_management.dto.SubTaskDTO;
 import com.project_management.dto.SubTaskDTONew;
 import com.project_management.dto.UserBasicDTO;
+import com.project_management.models.Employee;
 import com.project_management.models.SubTask;
 import com.project_management.models.Task;
 import com.project_management.models.User;
 import com.project_management.models.enums.TaskStatus;
+import com.project_management.repositories.EmployeeRepository;
 import com.project_management.repositories.SubTaskRepository;
 import com.project_management.repositories.TaskRepository;
 import com.project_management.repositories.UserRepository;
@@ -40,6 +42,9 @@ public class SubTaskServiceImpl implements SubTaskService {
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
 
+    @Autowired
+    private EmployeeRepository employeeRepository;
+
 
     @Override
     public SubTaskDTO createSubTask(SubTaskDTO subTaskDTO) {
@@ -49,7 +54,7 @@ public class SubTaskServiceImpl implements SubTaskService {
         SubTask subTask = new SubTask();
         BeanUtils.copyProperties(subTaskDTO, subTask, "id", "task");
         if (subTaskDTO.getAssignedUserId() != null) {
-            User user = userRepository.findById(subTaskDTO.getAssignedUserId())
+            User user = userRepository.findById(Long.valueOf(subTaskDTO.getAssignedUserId()))
                     .orElseThrow(() -> new RuntimeException("User not found"));
             subTask.setAssignedUser(user);
         }
@@ -81,7 +86,7 @@ public class SubTaskServiceImpl implements SubTaskService {
             role = jwtTokenProvider.getRole(token);
             String currentUserId = String.valueOf(jwtTokenProvider.getUserId(token));
 
-            if (role != null && !role.equals("ADMIN")) {
+            if (!role.equals("ROLE_ADMIN")) {
                 return subTasks.stream()
                         .filter(task -> Optional.ofNullable(task.getAssignedUserId())
                                 .map(id -> id.toString().equals(currentUserId))
@@ -89,6 +94,31 @@ public class SubTaskServiceImpl implements SubTaskService {
                         .collect(Collectors.toList());
 
             }
+        }
+        return subTasks;
+    }
+
+    @Override
+    public List<SubTaskDTO> getAllSubTasksByTaskId(long taskId) {
+        String role= null;
+        List<SubTaskDTO> subTasks = subTaskRepository.findAllByTask_id(taskId).stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getCredentials() != null) {
+            String token = (String) authentication.getCredentials();
+            role = jwtTokenProvider.getRole(token);
+            String currentUserId = String.valueOf(jwtTokenProvider.getUserId(token));
+
+//            if (!role.equals("ROLE_ADMIN")) {
+//                return subTasks.stream()
+//                        .filter(task -> Optional.ofNullable(task.getAssignedUserId())
+//                                .map(id -> id.toString().equals(currentUserId))
+//                                .orElse(false))
+//                        .collect(Collectors.toList());
+//
+//            }
         }
         return subTasks;
     }
@@ -135,7 +165,7 @@ public class SubTaskServiceImpl implements SubTaskService {
 
         if (subTaskDTO.getAssignedUserId() != null &&
                 (existingSubTask.getAssignedUser() == null || !subTaskDTO.getAssignedUserId().equals(existingSubTask.getAssignedUser().getId()))) {
-            User newAssignedUser = userRepository.findById(subTaskDTO.getAssignedUserId())
+            User newAssignedUser = userRepository.findById(Long.valueOf(subTaskDTO.getAssignedUserId()))
                     .orElseThrow(() -> new RuntimeException("Assigned User not found"));
             existingSubTask.setAssignedUser(newAssignedUser);
         }
@@ -212,7 +242,8 @@ public class SubTaskServiceImpl implements SubTaskService {
         BeanUtils.copyProperties(subTask, subTaskDto);
         subTaskDto.setTaskId(subTask.getTask().getId());
         if (subTask.getAssignedUser() != null && subTask.getAssignedUser().getId() != null){
-            subTaskDto.setAssignedUserId(subTask.getAssignedUser().getId());
+            Employee employee = employeeRepository.findByUserId(subTask.getAssignedUser().getId()).orElseThrow();
+            subTaskDto.setAssignedUserId(employee.getEmployeeName());
         }
         return subTaskDto;
     }

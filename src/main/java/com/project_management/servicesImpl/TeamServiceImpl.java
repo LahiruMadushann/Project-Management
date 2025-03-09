@@ -126,7 +126,7 @@ public class TeamServiceImpl implements TeamService {
 
                 // Double-check assessment limit before final selection
                 if (isWithinAssessmentLimit(selectedEmployee)) {
-                    TeamAssignment assignment = createTeamAssignment(findTeamDTO.getProjectId(), selectedEmployee);
+                    TeamAssignment assignment = createTeamAssignment(findTeamDTO.getProjectId(), selectedEmployee ,kpiMap);
                     if(selectedEmployee.getRoleCategory() == RoleCategory.dev || selectedEmployee.getRoleCategory() == RoleCategory.ui){
                         devCount++;
                     }else if(selectedEmployee.getRoleCategory() == qa){
@@ -208,7 +208,7 @@ public class TeamServiceImpl implements TeamService {
                         mlResponse.getStatusCode());
             }
 
-            fullBudget = mlResponse.getBody().getBudget() * 10;
+            fullBudget = Math.round(mlResponse.getBody().getBudget() / 10000.0) * 10000;
 
             salaryWeight = (salary / fullBudget) * 100;
             profitWeight = advanceDetails.getExpectedProfit();
@@ -272,7 +272,7 @@ public class TeamServiceImpl implements TeamService {
         return currentAssignments < employee.getMaximumAssessedCount();
     }
 
-    private TeamAssignment createTeamAssignment(Long projectId, EmployeeDTO employee) {
+    private TeamAssignment createTeamAssignment(Long projectId, EmployeeDTO employee, Map<String, KpiDTO> kpiMap) {
         TeamAssignment assignment = new TeamAssignment();
 
         TeamAssignmentId id = new TeamAssignmentId();
@@ -282,6 +282,7 @@ public class TeamServiceImpl implements TeamService {
         assignment.setId(id);
         assignment.setEmployeeName(employee.getEmployeeName());
         assignment.setRoleName(employee.getRoleName());
+        assignment.setKpi(kpiMap.get(employee.getEmployeeId()).getExperienceKpi());
 
         return assignment;
     }

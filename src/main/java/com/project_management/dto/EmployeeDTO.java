@@ -20,6 +20,6 @@ public class EmployeeDTO {
     private Long userId;
     private Integer maximumAssessedCount;
     private Integer difficultyLevel;
-    private Domain domain;
+    private String domain;
     private Double salary;
 }

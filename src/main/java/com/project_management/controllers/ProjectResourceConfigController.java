@@ -21,7 +21,7 @@ public class ProjectResourceConfigController {
     private ProjectResourceConfigService projectResourceConfigService;
 
     @GetMapping("/{projectId}")
-    private ResponseEntity<List<ProjectResourceConfig>> getConfigList(
+    private ResponseEntity<ProjectResourceConfig> getConfigList(
             @PathVariable Long projectId){
         return ResponseEntity.ok().body(projectResourceConfigService.getConfigByProject(projectId));
     }

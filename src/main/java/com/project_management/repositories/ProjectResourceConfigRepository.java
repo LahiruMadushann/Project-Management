@@ -10,4 +10,5 @@ import java.util.List;
 public interface ProjectResourceConfigRepository extends JpaRepository<ProjectResourceConfig,Long> {
     void deleteByProjectId(Long id);
     List<ProjectResourceConfig> findAllByProjectId(Long id);
+    ProjectResourceConfig findTopByProjectIdOrderByIdDesc(Long id);
 }

@@ -147,14 +147,14 @@ public class TaskServiceImpl implements TaskService {
             role = jwtTokenProvider.getRole(token);
             String currentUserId = String.valueOf(jwtTokenProvider.getUserId(token));
 
-            if (role != null && !role.equals("ADMIN")) {
-                return tasks.stream()
-                        .filter(task -> Optional.ofNullable(task.getAssignedUserId())
-                                .map(id -> id.toString().equals(currentUserId))
-                                .orElse(false))
-                        .collect(Collectors.toList());
-
-            }
+//            if (role != null && !role.equals("ADMIN")) {
+//                return tasks.stream()
+//                        .filter(task -> Optional.ofNullable(task.getAssignedUserId())
+//                                .map(id -> id.toString().equals(currentUserId))
+//                                .orElse(false))
+//                        .collect(Collectors.toList());
+//
+//            }
         }
         return tasks;
     }
@@ -323,7 +323,7 @@ public class TaskServiceImpl implements TaskService {
         BeanUtils.copyProperties(subTask, subTaskDTO);
         subTaskDTO.setTaskId(subTask.getTask().getId());
         if (subTask.getAssignedUser() != null) {
-            subTaskDTO.setAssignedUserId(subTask.getAssignedUser().getId());
+            subTaskDTO.setAssignedUserId(String.valueOf(subTask.getAssignedUser().getId()));
         }
         return subTaskDTO;
     }
