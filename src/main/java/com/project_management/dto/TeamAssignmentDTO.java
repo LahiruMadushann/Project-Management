@@ -14,6 +14,8 @@ public class TeamAssignmentDTO {
 
     private String roleName;
 
+    private double kpi;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;

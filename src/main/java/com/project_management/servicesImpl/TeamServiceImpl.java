@@ -208,7 +208,7 @@ public class TeamServiceImpl implements TeamService {
                         mlResponse.getStatusCode());
             }
 
-            fullBudget = Math.round(mlResponse.getBody().getBudget() / 10000.0) * 10000;
+            fullBudget = Math.round(mlResponse.getBody().getBudget() / 10000.0) * 100000;
 
             salaryWeight = (salary / fullBudget) * 100;
             profitWeight = advanceDetails.getExpectedProfit();
@@ -357,6 +357,7 @@ public class TeamServiceImpl implements TeamService {
             dto.setRoleName(assignment.getRoleName());
             dto.setCreatedAt(assignment.getCreatedAt());
             dto.setUpdatedAt(assignment.getUpdatedAt());
+            dto.setKpi(assignment.getKpi());
 
             String employeeId = assignment.getId().getEmployeeId();
             Employee employee = employeeRepository.findByEmployeeId(employeeId)

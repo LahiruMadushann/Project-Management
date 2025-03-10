@@ -16,5 +16,6 @@ public class ProjectDTO {
     private LocalDate deadline;
     private Long createUserId;
     private ProjectStatus status;
+    private boolean isEditable;
     private BigDecimal predictedBudgetForResources;
 }
