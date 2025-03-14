@@ -1,6 +1,12 @@
 package com.project_management.controllers;
 
 import com.project_management.dto.*;
+import com.project_management.models.Project;
+import com.project_management.models.ReleaseVersion;
+import com.project_management.models.Task;
+import com.project_management.models.enums.ProjectStatus;
+import com.project_management.repositories.ProjectRepository;
+import com.project_management.repositories.ReleaseVersionRepository;
 import com.project_management.security.utils.SecurityUtil;
 import com.project_management.services.TaskService;
 import com.project_management.servicesImpl.TaskCreationFromMLService;
@@ -25,6 +31,12 @@ public class TaskController {
     @Autowired
     private TaskCreationFromMLService taskCreationFromMLService;
 
+    @Autowired
+    private ProjectRepository projectRepository;
+
+    @Autowired
+    private ReleaseVersionRepository releaseVersionRepository;
+
     @Value("${ml.service.url:http://127.0.0.1:5000/analyze}")
     private String mlServiceUrl;
 
@@ -47,6 +59,20 @@ public class TaskController {
     public ResponseEntity<?> getTaskById(@PathVariable Long id) {
         try {
             TaskDTO task = taskService.getTaskById(id);
+            return ResponseEntity.ok(task);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return handleException(e);
+        }
+    }
+
+    @GetMapping("/project/{id}")
+    public ResponseEntity<?> getTaskByProjectId(@PathVariable Long id) {
+        try {
+            List<TaskDTO> task = taskService.getTaskByProjectId(id);
             return ResponseEntity.ok(task);
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
@@ -172,6 +198,11 @@ public class TaskController {
                 return ResponseEntity
                         .status(HttpStatus.BAD_REQUEST)
                         .body(new ErrorResponse("User stories are required"));
+            }
+            ReleaseVersion releaseVersion = releaseVersionRepository.findById(request.getReleaseVersionId()).orElseThrow();
+            Project project = releaseVersion.getProject();
+            if(project.getStatus() != ProjectStatus.ACCEPTED){
+                return new ResponseEntity<>("", HttpStatus.LOCKED);
             }
 
             List<TaskDTO> createdTasks = taskCreationFromMLService.createTasksFromStories(request);

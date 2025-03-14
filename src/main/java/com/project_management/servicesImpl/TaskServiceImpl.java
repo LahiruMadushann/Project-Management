@@ -4,10 +4,7 @@ import com.project_management.dto.*;
 import com.project_management.models.*;
 import com.project_management.models.enums.PriorityLevel;
 import com.project_management.models.enums.TaskStatus;
-import com.project_management.repositories.EmployeeRepository;
-import com.project_management.repositories.ReleaseVersionRepository;
-import com.project_management.repositories.TaskRepository;
-import com.project_management.repositories.UserRepository;
+import com.project_management.repositories.*;
 import com.project_management.security.jwt.JwtTokenProvider;
 import com.project_management.services.SubTaskService;
 import com.project_management.services.TaskService;
@@ -46,6 +43,7 @@ public class TaskServiceImpl implements TaskService {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
 
 
 
@@ -114,6 +112,19 @@ public class TaskServiceImpl implements TaskService {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Task not found"));
         return convertToDTO(task);
+    }
+
+    @Override
+    public List<TaskDTO> getTaskByProjectId(Long id) {
+        List<TaskDTO> tasks = new ArrayList<>();
+        List<ReleaseVersion> releaseVersions = releaseVersionRepository.findByProjectId(id);
+        releaseVersions.forEach(releaseVersion -> {
+            List<Task> temp = taskRepository.findByReleaseVersionId(releaseVersion.getId());
+            temp.forEach(task -> {
+                tasks.add(convertToDTO(task));
+            });
+        });
+        return tasks;
     }
 
     @Override

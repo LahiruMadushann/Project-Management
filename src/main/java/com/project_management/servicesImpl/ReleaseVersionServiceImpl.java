@@ -1,15 +1,10 @@
 package com.project_management.servicesImpl;
 
-import com.project_management.dto.ReleaseVersionDTO;
-import com.project_management.dto.ReleaseVersionDTONew;
-import com.project_management.dto.SubTaskDTO;
-import com.project_management.dto.TaskDTO;
-import com.project_management.models.Project;
-import com.project_management.models.ReleaseVersion;
-import com.project_management.models.SubTask;
-import com.project_management.models.Task;
+import com.project_management.dto.*;
+import com.project_management.models.*;
 import com.project_management.repositories.ProjectRepository;
 import com.project_management.repositories.ReleaseVersionRepository;
+import com.project_management.repositories.UserStoryRepository;
 import com.project_management.security.jwt.JwtTokenProvider;
 import com.project_management.services.ReleaseVersionService;
 import com.project_management.services.TaskService;
@@ -22,7 +17,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,6 +34,9 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
 
     @Autowired
     private TaskService taskService;
+
+    @Autowired
+    private UserStoryRepository userStoryRepository;
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
@@ -135,6 +136,24 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
     @Override
     public void deleteReleaseVersion(Long id) {
         releaseVersionRepository.deleteById(id);
+    }
+
+    @Override
+    public UserStoryListResponseDto getUserStoriesByProjectId(Long userId){
+        List<Project> projects = projectRepository.findByCreateUserId(userId);
+        List<ReleaseVersionDTO> releaseVersions = getAllReleaseVersions();
+        Map<Long,List<UserStoryModel>> innerMap = new HashMap<>();
+        Map<Long,Map<Long,List<UserStoryModel>>> outerMap = new HashMap<>();
+        projects.forEach(project -> {
+            releaseVersions.forEach(releaseVersionDTO -> {
+                List<UserStoryModel> temp = userStoryRepository.findAllByReleaseId(releaseVersionDTO.getId());
+                innerMap.put(releaseVersionDTO.getId(),temp);
+            });
+            outerMap.put(project.getId(),innerMap);
+        });
+        UserStoryListResponseDto response = new UserStoryListResponseDto();
+        response.setUserStories(outerMap);
+        return response;
     }
 
     private ReleaseVersionDTO convertToDTO(ReleaseVersion releaseVersion) {

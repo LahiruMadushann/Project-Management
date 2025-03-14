@@ -7,11 +7,14 @@ import com.project_management.models.enums.PriorityLevel;
 import com.project_management.models.enums.RoleCategory;
 import com.project_management.models.enums.TaskStatus;
 import com.project_management.repositories.*;
+import com.project_management.security.jwt.JwtTokenProvider;
 import com.project_management.services.TaskService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -43,6 +46,12 @@ public class TaskCreationFromMLService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private UserStoryRepository userStoryRepository;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
 
     @Value("${ml.service.url}")
     private String mlServiceUrl;
@@ -96,6 +105,9 @@ public class TaskCreationFromMLService {
             mainTask.setCreateUserId(createUser.getId());
             mainTask.setDifficultyLevel(difficultyLevel);
             mainTask.setAssignedDate(assignedDate);
+
+            // We'll set the actual start date and deadline after processing subtasks
+            // For now, use the provided values as defaults
             mainTask.setStartDate(startDate);
             mainTask.setDeadline(deadline);
             mainTask.setCompletedDate(completedDate);
@@ -116,6 +128,10 @@ public class TaskCreationFromMLService {
             List<SubTask> subtasks = new ArrayList<>();
             User mainTaskAssignedUser = null;
             int maxSubtaskWeight = 0;
+
+            // Variables to track earliest start date and latest deadline among subtasks
+            LocalDate earliestStartDate = null;
+            LocalDate latestDeadline = null;
 
             for (SubTaskDetail subTaskDetail : taskDetail.getSubtasks()) {
                 SubTask subTask = new SubTask();
@@ -183,14 +199,26 @@ public class TaskCreationFromMLService {
                         assignedUsers.add(assignedUser.getId());
                     }
 
+                    // Set subtask dates
+                    LocalDate subtaskStartDate = LocalDate.now();
+                    long durationDays = (long) Math.ceil(subTaskDetail.getEstimatedHours() / 8.0);
+                    LocalDate subtaskDeadline = subtaskStartDate.plusDays(durationDays);
+
+                    // Update earliest start date and latest deadline tracking
+                    if (earliestStartDate == null || subtaskStartDate.isBefore(earliestStartDate)) {
+                        earliestStartDate = subtaskStartDate;
+                    }
+
+                    if (latestDeadline == null || subtaskDeadline.isAfter(latestDeadline)) {
+                        latestDeadline = subtaskDeadline;
+                    }
+
                     subTask.setTask(savedMainTask);
                     subTask.setCreateUserId(createUserId);
                     subTask.setAssignedUser(assignedUser);
                     subTask.setAssignedDate(LocalDate.now());
-                    subTask.setStartDate(LocalDate.now());
-                    subTask.setDeadline(LocalDate.now().plusDays(
-                            (long) Math.ceil(subTaskDetail.getEstimatedHours() / 8.0)
-                    ));
+                    subTask.setStartDate(subtaskStartDate);
+                    subTask.setDeadline(subtaskDeadline);
                     subTask.setCreatedAt(LocalDateTime.now());
                     subTask.setUpdatedAt(LocalDateTime.now());
 
@@ -204,6 +232,15 @@ public class TaskCreationFromMLService {
 
             // Assign main task to the user with the most complex subtask
             savedMainTask.setAssignedUser(mainTaskAssignedUser);
+
+            // Update main task start date and deadline based on subtasks
+            if (earliestStartDate != null) {
+                savedMainTask.setStartDate(earliestStartDate);
+            }
+
+            if (latestDeadline != null) {
+                savedMainTask.setDeadline(latestDeadline);
+            }
 
             // Save all subtasks
             List<SubTask> savedSubtasks = subTaskRepository.saveAll(subtasks);
@@ -219,6 +256,7 @@ public class TaskCreationFromMLService {
 
         return createdTasks;
     }
+
 
     public List<TaskDTO> assignAutoUsers(Long projectId) {
         List<TaskDTO> existingTasks = taskService.getAllTasks();
@@ -357,6 +395,7 @@ public class TaskCreationFromMLService {
 
 
             Map<String, List<Map<String, String>>> mlRequest = new HashMap<>();
+            List<UserStoryModel> tempUserStories = new ArrayList<>();
             List<Map<String, String>> stories = request.getSimpleUserStories().stream()
                     .map(story -> {
                         Map<String, String> storyMap = new HashMap<>();
@@ -364,11 +403,26 @@ public class TaskCreationFromMLService {
                         storyMap.put("action", story.getAction().toLowerCase());
                         storyMap.put("what", story.getWhat().toLowerCase());
                         storyMap.put("context", story.getContext().toLowerCase());
+
+                        UserStoryModel userStoryModel = new UserStoryModel();
+                        userStoryModel.setReleaseId(request.getReleaseVersionId());
+                        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                        if (authentication != null && authentication.getCredentials() != null) {
+                            String token = (String) authentication.getCredentials();
+                            userStoryModel.setUserId(jwtTokenProvider.getUserId(token));
+                        }
+                        userStoryModel.setUserType(story.getUserType().toLowerCase());
+                        userStoryModel.setAction(story.getAction().toLowerCase());
+                        userStoryModel.setWhat(story.getWhat().toLowerCase());
+                        userStoryModel.setContext(story.getContext().toLowerCase());
+                        tempUserStories.add(userStoryModel);
+
                         return storyMap;
                     })
                     .collect(Collectors.toList());
 
             mlRequest.put("simple_user_stories", stories);
+            userStoryRepository.saveAll(tempUserStories);
 
             // Add debug logging
             log.debug("Sending request to ML service: {}", mlRequest);
