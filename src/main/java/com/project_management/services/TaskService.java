@@ -1,5 +1,6 @@
 package com.project_management.services;
 
+import com.project_management.dto.CriticalPathResponse;
 import com.project_management.dto.MLAnalysisResponse;
 import com.project_management.dto.TaskDTO;
 import com.project_management.dto.TaskDTONew;
@@ -11,7 +12,7 @@ import java.util.List;
 public interface TaskService {
     TaskDTO createTask(TaskDTO taskDTO);
     TaskDTO getTaskById(Long id);
-    List<TaskDTO> getTaskByProjectId(Long id);
+    CriticalPathResponse getTaskByProjectId(Long id);
     List<TaskDTO> getTasksByReleaseVersionId(Long releaseVersionId);
     List<TaskDTONew> getTasksByReleaseVersionIdNew(Long releaseVersionId);
     List<TaskDTO> getAllTasks();

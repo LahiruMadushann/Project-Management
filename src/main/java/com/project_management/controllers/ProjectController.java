@@ -5,6 +5,7 @@ import com.project_management.models.AdvanceDetails;
 import com.project_management.models.ProjectBudget;
 import com.project_management.security.utils.SecurityUtil;
 import com.project_management.services.ProjectService;
+import com.project_management.services.ReleaseVersionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,9 @@ public class ProjectController {
 
     @Autowired
     private ProjectService projectService;
+
+    @Autowired
+    private ReleaseVersionService releaseVersionService;
 
     @PostMapping
     public ResponseEntity<?> createProject(@RequestBody ProjectDTO projectDTO) {
@@ -129,6 +133,15 @@ public class ProjectController {
     public ResponseEntity<ProjectBudget> saveBudget1(@RequestBody ProjectBudgetGraphDto requestDto){
         System.out.println("here");
         return ResponseEntity.ok().body(projectService.saveBudget(requestDto));
+    }
+
+    @GetMapping("/get/stories")
+    public ResponseEntity<?> getStories() {
+        try {
+            return ResponseEntity.ok(releaseVersionService.getUserStoriesByProjectId());
+        } catch (Exception e) {
+            return handleException(e);
+        }
     }
 
 

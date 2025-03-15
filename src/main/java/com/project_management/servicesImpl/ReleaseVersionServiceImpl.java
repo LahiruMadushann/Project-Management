@@ -2,6 +2,7 @@ package com.project_management.servicesImpl;
 
 import com.project_management.dto.*;
 import com.project_management.models.*;
+import com.project_management.repositories.ClientRepository;
 import com.project_management.repositories.ProjectRepository;
 import com.project_management.repositories.ReleaseVersionRepository;
 import com.project_management.repositories.UserStoryRepository;
@@ -37,6 +38,9 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
 
     @Autowired
     private UserStoryRepository userStoryRepository;
+
+    @Autowired
+    private ClientRepository clientRepository;
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
@@ -139,17 +143,26 @@ public class ReleaseVersionServiceImpl implements ReleaseVersionService {
     }
 
     @Override
-    public UserStoryListResponseDto getUserStoriesByProjectId(Long userId){
-        List<Project> projects = projectRepository.findByCreateUserId(userId);
-        List<ReleaseVersionDTO> releaseVersions = getAllReleaseVersions();
+    public UserStoryListResponseDto getUserStoriesByProjectId(){
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Long currentUserId = 0L;
+        if (authentication != null && authentication.getCredentials() != null) {
+            String token = (String) authentication.getCredentials();
+            currentUserId = jwtTokenProvider.getUserId(token);
+        }
+        List<Integer> client = clientRepository.findProjectIdsByUserId(Math.toIntExact(currentUserId));
         Map<Long,List<UserStoryModel>> innerMap = new HashMap<>();
         Map<Long,Map<Long,List<UserStoryModel>>> outerMap = new HashMap<>();
-        projects.forEach(project -> {
+        client.forEach(project -> {
+            List<ReleaseVersionDTO> releaseVersions = getReleaseVersionsByProjectId(Long.valueOf(project));
             releaseVersions.forEach(releaseVersionDTO -> {
                 List<UserStoryModel> temp = userStoryRepository.findAllByReleaseId(releaseVersionDTO.getId());
-                innerMap.put(releaseVersionDTO.getId(),temp);
+                if(!temp.isEmpty()){
+                    innerMap.put(releaseVersionDTO.getId(),temp);
+                }
             });
-            outerMap.put(project.getId(),innerMap);
+            outerMap.put(Long.valueOf(project),innerMap);
         });
         UserStoryListResponseDto response = new UserStoryListResponseDto();
         response.setUserStories(outerMap);

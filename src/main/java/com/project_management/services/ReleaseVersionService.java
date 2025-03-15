@@ -12,7 +12,7 @@ public interface ReleaseVersionService {
     List<ReleaseVersionDTO> getAllReleaseVersions();
     ReleaseVersionDTO updateReleaseVersion(Long id, ReleaseVersionDTO releaseVersionDTO);
     void deleteReleaseVersion(Long id);
-    UserStoryListResponseDto getUserStoriesByProjectId(Long userId);
+    UserStoryListResponseDto getUserStoriesByProjectId();
     List<ReleaseVersionDTO> getReleaseVersionsByProjectId(Long projectId);
     List<ReleaseVersionDTONew> getReleaseVersionsByProjectIdNew(Long projectId);
 }

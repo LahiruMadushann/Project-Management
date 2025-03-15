@@ -37,7 +37,7 @@ public class TaskController {
     @Autowired
     private ReleaseVersionRepository releaseVersionRepository;
 
-    @Value("${ml.service.url:http://127.0.0.1:5000/analyze}")
+    @Value("${ml.service.url:http://127.0.0.1:8000/analyze}")
     private String mlServiceUrl;
 
     @PostMapping
@@ -72,8 +72,8 @@ public class TaskController {
     @GetMapping("/project/{id}")
     public ResponseEntity<?> getTaskByProjectId(@PathVariable Long id) {
         try {
-            List<TaskDTO> task = taskService.getTaskByProjectId(id);
-            return ResponseEntity.ok(task);
+            CriticalPathResponse response = taskService.getTaskByProjectId(id);
+            return ResponseEntity.ok(response);
         } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (RuntimeException e) {

@@ -10,10 +10,13 @@ import com.project_management.services.SubTaskService;
 import com.project_management.services.TaskService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -43,6 +46,12 @@ public class TaskServiceImpl implements TaskService {
 
     @Autowired
     private JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Value("${ml.service.critical.url}")
+    private String criticalUrl;
 
 
 
@@ -115,7 +124,7 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public List<TaskDTO> getTaskByProjectId(Long id) {
+    public CriticalPathResponse getTaskByProjectId(Long id) {
         List<TaskDTO> tasks = new ArrayList<>();
         List<ReleaseVersion> releaseVersions = releaseVersionRepository.findByProjectId(id);
         releaseVersions.forEach(releaseVersion -> {
@@ -124,7 +133,29 @@ public class TaskServiceImpl implements TaskService {
                 tasks.add(convertToDTO(task));
             });
         });
-        return tasks;
+        CriticalPathRequestDto requestDto = new CriticalPathRequestDto();
+        requestDto.setTasks(tasks);
+
+        // Prepare headers
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<CriticalPathRequestDto> entity = new HttpEntity<>(requestDto, headers);
+
+        // Send the request to the ML service
+        ResponseEntity<CriticalPathResponse> mlResponse = restTemplate.exchange(
+                criticalUrl,
+                HttpMethod.POST,
+                entity,
+                CriticalPathResponse.class
+        );
+
+        // Check the response status and handle errors
+        if (!mlResponse.getStatusCode().is2xxSuccessful() || mlResponse.getBody() == null) {
+            throw new RuntimeException("Failed to get prediction from ML service: " +
+                    mlResponse.getStatusCode());
+        }
+
+        return mlResponse.getBody();
     }
 
     @Override
