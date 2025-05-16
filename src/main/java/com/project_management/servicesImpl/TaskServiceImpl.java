@@ -125,37 +125,37 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public CriticalPathResponse getTaskByProjectId(Long id) {
-        List<TaskDTO> tasks = new ArrayList<>();
-        List<ReleaseVersion> releaseVersions = releaseVersionRepository.findByProjectId(id);
-        releaseVersions.forEach(releaseVersion -> {
-            List<Task> temp = taskRepository.findByReleaseVersionId(releaseVersion.getId());
-            temp.forEach(task -> {
-                tasks.add(convertToDTO(task));
-            });
-        });
-        CriticalPathRequestDto requestDto = new CriticalPathRequestDto();
-        requestDto.setTasks(tasks);
+//        List<TaskDTO> tasks = new ArrayList<>();
+//        List<ReleaseVersion> releaseVersions = releaseVersionRepository.findByProjectId(id);
+//        releaseVersions.forEach(releaseVersion -> {
+//            List<Task> temp = taskRepository.findByReleaseVersionId(releaseVersion.getId());
+//            temp.forEach(task -> {
+//                tasks.add(convertToDTO(task));
+//            });
+//        });
+//        CriticalPathRequestDto requestDto = new CriticalPathRequestDto();
+//        requestDto.setTasks(tasks);
+//
+//        // Prepare headers
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.setContentType(MediaType.APPLICATION_JSON);
+//        HttpEntity<CriticalPathRequestDto> entity = new HttpEntity<>(requestDto, headers);
+//
+//        // Send the request to the ML service
+//        ResponseEntity<CriticalPathResponse> mlResponse = restTemplate.exchange(
+//                criticalUrl,
+//                HttpMethod.POST,
+//                entity,
+//                CriticalPathResponse.class
+//        );
+//
+//        // Check the response status and handle errors
+//        if (!mlResponse.getStatusCode().is2xxSuccessful() || mlResponse.getBody() == null) {
+//            throw new RuntimeException("Failed to get prediction from ML service: " +
+//                    mlResponse.getStatusCode());
+//        }
 
-        // Prepare headers
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<CriticalPathRequestDto> entity = new HttpEntity<>(requestDto, headers);
-
-        // Send the request to the ML service
-        ResponseEntity<CriticalPathResponse> mlResponse = restTemplate.exchange(
-                criticalUrl,
-                HttpMethod.POST,
-                entity,
-                CriticalPathResponse.class
-        );
-
-        // Check the response status and handle errors
-        if (!mlResponse.getStatusCode().is2xxSuccessful() || mlResponse.getBody() == null) {
-            throw new RuntimeException("Failed to get prediction from ML service: " +
-                    mlResponse.getStatusCode());
-        }
-
-        return mlResponse.getBody();
+        return null;
     }
 
     @Override

@@ -123,6 +123,11 @@ public class ProjectController {
         return ResponseEntity.ok().body(projectService.saveAdvance(advanceDetailsDTO));
     }
 
+    @GetMapping("/advance/all/{id}")
+    public ResponseEntity<List<AdvanceDetails>> getAdvance(@PathVariable Long id){
+        return ResponseEntity.ok().body(projectService.getAdvance(id));
+    }
+
     @GetMapping("/advance/{projectId}")
     public ResponseEntity<AdvanceDetails> getAdvanceDetails(@PathVariable Long projectId) {
         AdvanceDetails advanceDetails = projectService.getAdvanceDetailsByProjectId(projectId);

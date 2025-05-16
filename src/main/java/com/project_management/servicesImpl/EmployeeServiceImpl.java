@@ -7,6 +7,7 @@ import com.project_management.dto.EmployeeSkillDTO;
 import com.project_management.models.*;
 import com.project_management.models.enums.Domain;
 import com.project_management.repositories.EmployeeRepository;
+import com.project_management.repositories.PerfectEmployeeRepository;
 import com.project_management.repositories.UserRepository;
 import com.project_management.services.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,9 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PerfectEmployeeRepository perfectEmployeeRepository;
 
     private Random random = new Random();
 
@@ -59,6 +63,11 @@ public class EmployeeServiceImpl implements EmployeeService {
         employee.setSkills(mapSkills(employeeDTO.getSkills(), employee));
         employee.setExperiences(mapExperiences(employeeDTO.getExperiences(), employee));
         employee.setEducations(mapEducations(employeeDTO.getEducations(), employee));
+
+        /**
+         * calculate initial kpi
+         */
+        calculateInitialKpi(employee);
 
         Employee savedEmployee = employeeRepository.save(employee);
         return convertToDTO(savedEmployee);
@@ -235,6 +244,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         dto.setDifficultyLevel(employee.getDifficultyLevel());
         dto.setDomain(String.valueOf(employee.getDomain()));
         dto.setSalary(employee.getSalary());
+        dto.setKpi(employee.getKpi());
 
         dto.setSkills(employee.getSkills().stream().map(this::convertToSkillDTO).collect(Collectors.toList()));
         dto.setExperiences(employee.getExperiences().stream().map(this::convertToExperienceDTO).collect(Collectors.toList()));
@@ -302,4 +312,68 @@ public class EmployeeServiceImpl implements EmployeeService {
         return userRepository.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
+
+    /**
+     * calculate the initial KPI
+     * @param employee
+     */
+    private void calculateInitialKpi(Employee employee) {
+        // Fetch the PerfectEmployee based on the given employee's role
+        PerfectEmployee perfectEmployee = perfectEmployeeRepository.findByRoleName(employee.getRoleName());
+        if (perfectEmployee == null) {
+            throw new IllegalArgumentException("Perfect employee not found for role: " + employee.getRoleName());
+        }
+
+        // Initialize total scores
+        double employeeTotal = 0.0;
+        double perfectTotal = 0.0;
+
+        // Calculate Skill Score
+        for (EmployeeSkill employeeSkill : employee.getSkills()) {
+            PerfectEmployeeSkill perfectSkill = perfectEmployee.getSkills().stream()
+                    .filter(s -> s.getSkillName().equalsIgnoreCase(employeeSkill.getSkillName()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (perfectSkill != null) {
+                employeeTotal += employeeSkill.getSkillPoints() * perfectSkill.getSkillWeight();
+                perfectTotal += perfectSkill.getSkillPoints() * perfectSkill.getSkillWeight();
+            }
+        }
+
+        // Calculate Experience Score
+        for (EmployeeExperience employeeExperience : employee.getExperiences()) {
+            PerfectEmployeeExperience perfectExperience = perfectEmployee.getExperiences().stream()
+                    .filter(e -> e.getExperienceName().equalsIgnoreCase(employeeExperience.getExperienceName()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (perfectExperience != null) {
+                employeeTotal += employeeExperience.getExperiencePoints() * perfectExperience.getExperienceWeight();
+                perfectTotal += perfectExperience.getExperiencePoints() * perfectExperience.getExperienceWeight();
+            }
+        }
+
+        // Calculate Education Score
+        for (EmployeeEducation employeeEducation : employee.getEducations()) {
+            PerfectEmployeeEducation perfectEducation = perfectEmployee.getEducations().stream()
+                    .filter(e -> e.getEducationName().equalsIgnoreCase(employeeEducation.getEducationName()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (perfectEducation != null) {
+                employeeTotal += employeeEducation.getEducationPoints() * perfectEducation.getEducationWeight();
+                perfectTotal += perfectEducation.getEducationPoints() * perfectEducation.getEducationWeight();
+            }
+        }
+
+        // Avoid division by zero
+        if (perfectTotal == 0) {
+            employee.setKpi(0.0);
+        }
+
+        // Calculate KPI as a percentage
+        employee.setKpi((employeeTotal / perfectTotal) * 100);
+    }
+
 }

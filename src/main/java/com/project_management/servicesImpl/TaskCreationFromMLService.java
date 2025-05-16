@@ -92,10 +92,10 @@ public class TaskCreationFromMLService {
 
         Set<Long> assignedUsers = new HashSet<>();
         for (TaskDetail taskDetail : allTaskDetails) {
-            if (releaseVersion.getVersionLimitConstant() == 0) {
-                // Create a new release version if the limit is reached
-                releaseVersion = createNewReleaseVersion(releaseVersion, createUserId);
-            }
+//            if (releaseVersion.getVersionLimitConstant() == 0) {
+//                // Create a new release version if the limit is reached
+//                releaseVersion = createNewReleaseVersion(releaseVersion, createUserId);
+//            }
             Long projectId = releaseVersion.getProject().getId();
             // Create main task
             Task mainTask = new Task();
@@ -103,13 +103,16 @@ public class TaskCreationFromMLService {
             mainTask.setStatus(TaskStatus.TODO);
             mainTask.setReleaseVersion(releaseVersion);
             mainTask.setCreateUserId(createUser.getId());
+            /**
+             * set difficulty level based on time ( this  code will be change after implementing the critical path )
+             */
             mainTask.setDifficultyLevel(difficultyLevel);
             mainTask.setAssignedDate(assignedDate);
 
             // We'll set the actual start date and deadline after processing subtasks
             // For now, use the provided values as defaults
-            mainTask.setStartDate(startDate);
-            mainTask.setDeadline(deadline);
+            mainTask.setStartDate(LocalDate.parse(taskDetail.getStartDate()));
+            mainTask.setDeadline(LocalDate.parse(taskDetail.getEndDate()));
             mainTask.setCompletedDate(completedDate);
             mainTask.setCreatedAt(LocalDateTime.now());
             mainTask.setUpdatedAt(LocalDateTime.now());
@@ -217,8 +220,8 @@ public class TaskCreationFromMLService {
                     subTask.setCreateUserId(createUserId);
                     subTask.setAssignedUser(assignedUser);
                     subTask.setAssignedDate(LocalDate.now());
-                    subTask.setStartDate(subtaskStartDate);
-                    subTask.setDeadline(subtaskDeadline);
+                    subTask.setStartDate(LocalDate.parse(subTaskDetail.getStartDate()));
+                    subTask.setDeadline(LocalDate.parse(subTaskDetail.getEndDate()));
                     subTask.setCreatedAt(LocalDateTime.now());
                     subTask.setUpdatedAt(LocalDateTime.now());
 
@@ -258,6 +261,11 @@ public class TaskCreationFromMLService {
     }
 
 
+    /**
+     * auto assign users to tasks
+     * @param projectId
+     * @return
+     */
     public List<TaskDTO> assignAutoUsers(Long projectId) {
         List<TaskDTO> existingTasks = taskService.getAllTasks();
         List<TaskDetail> allTaskDetails = existingTasks.stream().map((task) -> {
@@ -311,12 +319,11 @@ public class TaskCreationFromMLService {
                         selectedEmployee = exactMatches.get(new Random().nextInt(exactMatches.size()));
                     } else {
                         List<Employee> closestMatches = employeeRepository.findTeamEmployees(projectId).stream()
-                                .filter(emp -> emp.getRoleCategory() == requiredRole &&
-                                        emp.getUser() != null && !assignedUsers.contains(emp.getUser().getId()))
-                                .sorted(Comparator.comparingInt(emp ->
-                                        Math.abs(emp.getDifficultyLevel() - existingTask.getDifficultyLevel())))
+                                .filter(emp -> emp.getRoleCategory() == requiredRole)
+                                .sorted(Comparator.comparing(Employee::getKpi).reversed()) // Sort by KPI descending
                                 .limit(5)
                                 .collect(Collectors.toList());
+
 
                         if (!closestMatches.isEmpty()) {
                             selectedEmployee = closestMatches.get(0);
@@ -390,7 +397,6 @@ public class TaskCreationFromMLService {
                     Collections.shuffle(levels, new Random(System.currentTimeMillis()));
                     request.setDifficultyLevel(levels.get(0));
                 }
-                request.setDifficultyLevel(3);
             }
 
 

@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -162,13 +163,19 @@ public class ProjectServiceImpl implements ProjectService {
 
         Project updatedProject = projectRepository.save(existingProject);
 
-        Notification notification = new Notification();
-        notification.setToId(existingProject.getCreateUserId());
-        notification.setMessage(updatedProject.getName()+" project is UPDATED and " + updatedProject.getStatus());
-        notification.setProjectId(existingProject.getId());
-        notification.setType("yellow");
 
-        notificationRepository.save(notification);
+        List<Client> client = clientRepository.findAllByProjectId(existingProject.getId());
+        client.forEach(client1 -> {
+
+            Notification notification = new Notification();
+            notification.setToId(Long.valueOf(client1.getUserId()));
+            notification.setMessage(updatedProject.getName()+" project is UPDATED and " + updatedProject.getStatus());
+            notification.setProjectId(existingProject.getId());
+            notification.setType("yellow");
+
+            notificationRepository.save(notification);
+        });
+
         return convertToDTO(updatedProject);
     }
 
@@ -188,23 +195,28 @@ public class ProjectServiceImpl implements ProjectService {
         boolean editable = existingProject.getStatus().equals(ProjectStatus.PENDING) || existingProject.getStatus().equals(ProjectStatus.RWC);
         res.setEditable(editable);
 
-        Notification notification = new Notification();
-        notification.setToId(existingProject.getCreateUserId());
-        if(updatedProject.getStatus().equals(ProjectStatus.RWC)){
-            notification.setMessage(updatedProject.getName()+" project is rejected:\n comments: "+request.getComments());
-        }else {
-            notification.setMessage(updatedProject.getName()+" project is " + updatedProject.getStatus());
-        }
-        notification.setProjectId(existingProject.getId());
+        List<Client> client = clientRepository.findAllByProjectId(existingProject.getId());
+        client.forEach(client1 -> {
+            Notification notification = new Notification();
+            notification.setToId(Long.valueOf(client1.getUserId()));
+            if(updatedProject.getStatus().equals(ProjectStatus.RWC)){
+                notification.setMessage(updatedProject.getName()+" project is rejected:\n comments: "+request.getComments());
+            }else {
+                notification.setMessage(updatedProject.getName()+" project is " + updatedProject.getStatus());
+            }
+            notification.setProjectId(existingProject.getId());
+            if(updatedProject.getStatus().equals(ProjectStatus.REJECTED)){
+                notification.setType("red");
+            }else if(updatedProject.getStatus().equals(ProjectStatus.ACCEPTED)){
+                notification.setType("green");
+            }else{
+                notification.setType("yellow");
+            }
+            notificationRepository.save(notification);
+        });
 
-        if(updatedProject.getStatus().equals(ProjectStatus.REJECTED)){
-            notification.setType("red");
-        }else if(updatedProject.getStatus().equals(ProjectStatus.ACCEPTED)){
-            notification.setType("green");
-        }else{
-            notification.setType("yellow");
-        }
-        notificationRepository.save(notification);
+
+
         return res;
     }
 
@@ -252,6 +264,8 @@ public class ProjectServiceImpl implements ProjectService {
                     mlResponse.getStatusCode());
         }
         effortValue = mlResponse.getBody().getEffort();
+        effortValue = (Double.parseDouble(String.format("%.2f", effortValue)));
+
         ResourceMLRequestDTO requestDto = new ResourceMLRequestDTO();
         requestDto.setDomain(advanceDetailsDTO.getDomain());
         requestDto.setMethodology(advanceDetailsDTO.getMethodology()==2?"Agile":"Waterfall");
@@ -312,6 +326,7 @@ public class ProjectServiceImpl implements ProjectService {
         calculationHeader.setTasks(transformedTasks);
 
         requestDto2.setTotal_effort(calculationHeader.getTotalEffort());
+        requestDto2.setTotal_effort(Double.parseDouble(String.format("%.2f", calculationHeader.getTotalEffort())));
         requestDto2.setTasks(calculationHeader.getTasks());
         requestDto2.setRole_distribution(calculationHeader.getRoleDistribution());
         requestDto2.setMax_story_points(calculationHeader.getMaxStoryPoints());
@@ -341,6 +356,12 @@ public class ProjectServiceImpl implements ProjectService {
         return combinedCallResponse;
     }
 
+    @Override
+    public List<AdvanceDetails> getAdvance(Long id) {
+        List<AdvanceDetails> test =advanceDetailsRepository.findAllByProjectId(id);
+        return test;
+    }
+
     public ReleaseCalculationResponse calculateReleaseDetails(AdvanceDetailsDTO advanceDetailsDTO) {
         List<PerfectEmployeeDTO> perfectEmployees = perfectEmployeeService.getAllPerfectEmployees();
         ReleaseVersionDTO releaseVersion = releaseVersionService.getReleaseVersionById(advanceDetailsDTO.getProjectId());
@@ -350,7 +371,8 @@ public class ProjectServiceImpl implements ProjectService {
 
     private ReleaseCalculationResponse buildResponse(ReleaseVersionDTO releaseVersion, RoleDistributionResponse distribution) {
         ReleaseCalculationResponse response = new ReleaseCalculationResponse();
-        response.setTotalEffort(effortValue);
+        response.setTotalEffort(Double.parseDouble(String.format("%.2f", effortValue)));
+
         response.setTasks(calculateTaskCounts(releaseVersion));
 
         if (distribution != null) {

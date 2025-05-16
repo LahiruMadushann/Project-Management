@@ -22,6 +22,7 @@ public class KpiCalculatorServiceImpl implements KpiService {
     @Autowired
     private PerfectEmployeeRepository perfectEmployeeRepository;
 
+
     @Override
     public List<KpiDTO> calculateKpiByDomain(Domain domain) {
         List<Employee> employees;
@@ -44,6 +45,12 @@ public class KpiCalculatorServiceImpl implements KpiService {
     }
 
 
+    /**
+     * calculate kpi for project - outer method
+     * in here get employees and loop , and send to calculateKpiForEmployee method to calculate single employee
+     * kpi and collect to a list
+     * @return
+     */
     public List<KpiDTO> calculateKpiForAllEmployees() {
         List<Employee> employees = employeeRepository.findAll();
         List<PerfectEmployee> perfectEmployees = perfectEmployeeRepository.findAll();
@@ -71,6 +78,13 @@ public class KpiCalculatorServiceImpl implements KpiService {
         return calculateKpiForEmployee(employee, perfectEmployeeMap);
     }
 
+    /**
+     * calculate employee kpi based on project
+     * @param 'project'
+     * @param employee
+     * @param perfectEmployeeMap
+     * @return
+     */
     private KpiDTO calculateKpiForEmployee(Employee employee, Map<String, PerfectEmployee> perfectEmployeeMap) {
         PerfectEmployee perfectEmployee = perfectEmployeeMap.get(employee.getRoleName());
 
@@ -88,6 +102,14 @@ public class KpiCalculatorServiceImpl implements KpiService {
             educationWeight = calculateWeight(employee.getEducations(), perfectEmployee.getEducations());
             experienceWeight = calculateWeight(employee.getExperiences(), perfectEmployee.getExperiences());
             totalWeight = skillWeight + educationWeight + experienceWeight;
+
+            /**
+             * keep experiences that relevant to the project and remove other experiences
+             */
+//            List<EmployeeExperience> filteredExperiences = employee.getExperiences().stream()
+//                    .filter(exp -> Boolean.parseBoolean(exp.getExperienceName()))
+//                    .collect(Collectors.toList());
+
 
             skillKpi = (calculateCategoryKpi(employee.getSkills(), perfectEmployee.getSkills())) * ((skillWeight/totalWeight) * 100);
             educationKpi = (calculateCategoryKpi(employee.getEducations(), perfectEmployee.getEducations())) * ((educationWeight/totalWeight) * 100);
@@ -239,4 +261,65 @@ public class KpiCalculatorServiceImpl implements KpiService {
             return weight;
         }
     }
+
+
+//    private void calculateInitialKpi(Employee employee) {
+//        // Fetch the PerfectEmployee based on the given employee's role
+//        PerfectEmployee perfectEmployee = perfectEmployeeRepository.findByRoleName(employee.getRoleName());
+//        if (perfectEmployee == null) {
+//            throw new IllegalArgumentException("Perfect employee not found for role: " + employee.getRoleName());
+//        }
+//
+//        // Initialize total scores
+//        double employeeTotal = 0.0;
+//        double perfectTotal = 0.0;
+//
+//        // Calculate Skill Score
+//        for (EmployeeSkill employeeSkill : employee.getSkills()) {
+//            PerfectEmployeeSkill perfectSkill = perfectEmployee.getSkills().stream()
+//                    .filter(s -> s.getSkillName().equalsIgnoreCase(employeeSkill.getSkillName()))
+//                    .findFirst()
+//                    .orElse(null);
+//
+//            if (perfectSkill != null) {
+//                employeeTotal += employeeSkill.getSkillPoints() * perfectSkill.getSkillWeight();
+//                perfectTotal += perfectSkill.getSkillPoints() * perfectSkill.getSkillWeight();
+//            }
+//        }
+//
+//        // Calculate Experience Score
+//        for (EmployeeExperience employeeExperience : employee.getExperiences()) {
+//            PerfectEmployeeExperience perfectExperience = perfectEmployee.getExperiences().stream()
+//                    .filter(e -> e.getExperienceName().equalsIgnoreCase(employeeExperience.getExperienceName()))
+//                    .findFirst()
+//                    .orElse(null);
+//
+//            if (perfectExperience != null) {
+//                employeeTotal += employeeExperience.getExperiencePoints() * perfectExperience.getExperienceWeight();
+//                perfectTotal += perfectExperience.getExperiencePoints() * perfectExperience.getExperienceWeight();
+//            }
+//        }
+//
+//        // Calculate Education Score
+//        for (EmployeeEducation employeeEducation : employee.getEducations()) {
+//            PerfectEmployeeEducation perfectEducation = perfectEmployee.getEducations().stream()
+//                    .filter(e -> e.getEducationName().equalsIgnoreCase(employeeEducation.getEducationName()))
+//                    .findFirst()
+//                    .orElse(null);
+//
+//            if (perfectEducation != null) {
+//                employeeTotal += employeeEducation.getEducationPoints() * perfectEducation.getEducationWeight();
+//                perfectTotal += perfectEducation.getEducationPoints() * perfectEducation.getEducationWeight();
+//            }
+//        }
+//
+//        // Avoid division by zero
+//        if (perfectTotal == 0) {
+//            employee.setKpi(0.0);
+//        }
+//
+//        // Calculate KPI as a percentage
+//        employee.setKpi((employeeTotal / perfectTotal) * 100);
+//    }
+
 }

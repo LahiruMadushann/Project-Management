@@ -22,4 +22,5 @@ public class EmployeeDTO {
     private Integer difficultyLevel;
     private String domain;
     private Double salary;
+    private Double kpi;
 }

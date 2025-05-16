@@ -24,4 +24,6 @@ public class ProjectBudgetGraphDto {
 
     private BigDecimal expectedBudget;
     private String budgetRisk;
+    private String predictedDate;
+    private String dateRisk;
 }

@@ -1,5 +1,6 @@
 package com.project_management.controllers;
 
+import com.project_management.dto.CriticalPathResponse;
 import com.project_management.dto.ReleaseVersionDTO;
 import com.project_management.security.utils.SecurityUtil;
 import com.project_management.services.ReleaseVersionService;
@@ -54,6 +55,21 @@ public class ReleaseVersionController {
             List<ReleaseVersionDTO> releaseVersions = releaseVersionService.getReleaseVersionsByProjectId(projectId);
             return ResponseEntity.ok(releaseVersions);
         } catch (NoSuchElementException | EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            return handleException(e);
+        }
+    }
+
+
+    @GetMapping("/critical/{id}")
+    public ResponseEntity<?> getTaskByProjectId(@PathVariable Long id) {
+        try {
+            CriticalPathResponse response = releaseVersionService.criticalPath(id);
+            return ResponseEntity.ok(response);
+        } catch (NoSuchElementException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());

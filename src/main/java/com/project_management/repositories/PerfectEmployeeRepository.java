@@ -13,4 +13,7 @@ public interface PerfectEmployeeRepository extends JpaRepository<PerfectEmployee
 
     @Query("SELECT pe.roleName FROM PerfectEmployee pe WHERE pe.employeeId = :employeeId")
     String findRolesByEmployeeId(@Param("employeeId") String employeeId);
+
+    PerfectEmployee findByRoleName(String name);
+
 }

@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Random;
 
 @Data
 @Entity
@@ -56,6 +57,20 @@ public class Employee {
     @Column(name = "domain", nullable = false)
     private Domain domain;
 
+
+    @Column(name = "initial_kpi", nullable = false)
+    private Double kpi;
+
     private Double salary;
+
+    public void setKpi(double kpi){
+        if(kpi> 100){
+            Random random = new Random();
+            double upperLimit = 80 + (random.nextDouble() * 20);
+            this.kpi = Math.min(kpi, upperLimit);
+        }else{
+            this.kpi =kpi;
+        }
+    }
 }
 

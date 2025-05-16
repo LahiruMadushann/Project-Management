@@ -18,6 +18,11 @@ public class FindTeamController {
     @Autowired
     private TeamService teamService;
 
+    /**
+     * start of the find time
+     * catch the request that coming from the front end
+     * @return
+     */
     @PostMapping("/find")
     public ResponseEntity<?> getTeam(@RequestBody FindTeamDTO findTeamDTO) {
         try {

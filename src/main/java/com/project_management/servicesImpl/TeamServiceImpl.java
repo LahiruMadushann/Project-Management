@@ -15,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -57,9 +58,28 @@ public class TeamServiceImpl implements TeamService {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private ReleaseVersionService releaseVersionService;
+
     @Value("${ml.service.url.budget}")
     private String budgetUrl;
 
+
+    private double formatNonNegative(double value) {
+        DecimalFormat df = new DecimalFormat("#.##");
+        double formattedValue = Double.parseDouble(df.format(value));
+        return Math.max(0.0, formattedValue); // Ensures value is not negative
+    }
+
+    /**
+     * Logic implementation of finding employee pool
+     * 1. get project
+     * 2. get employee
+     * 3. employee filtering
+     * 4. map kpi
+     * @param findTeamDTO
+     * @return
+     */
     @Override
     @Transactional
     public CombinedFindTeamResponseDto findAndAssignTeam(FindTeamDTO findTeamDTO) {
@@ -218,31 +238,55 @@ public class TeamServiceImpl implements TeamService {
             resourcesWeight = fullWeight - (profitWeight + misWeight + salaryWeight);
             resources = (fullBudget / 100) * resourcesWeight;
 
-            // Create a formatter for 2 decimal places
-            DecimalFormat df = new DecimalFormat("#.##");
 
 // Format all decimal values before setting them
 //            ProjectBudgetGraphDto graphDto = new ProjectBudgetGraphDto();
+            // Helper method to format values and ensure they're not negative
+
+
+// Now we can use this helper method in your existing code
             graphDto.setProjectId(project.getId());
-            graphDto.setFullBudget((long) Double.parseDouble(df.format(fullBudget)));
-            graphDto.setFullWeight(Double.parseDouble(df.format(fullWeight)));
-            graphDto.setExpectedBudget(BigDecimal.valueOf(project.getBudget() != null ?
-                    Double.parseDouble(df.format(project.getBudget())) : null));
-            graphDto.setProfit(Double.parseDouble(df.format(profit)));
-            graphDto.setProfitWeight(Double.parseDouble(df.format(profitWeight)));
-            graphDto.setSalary(Double.parseDouble(df.format(salary)));
-            graphDto.setSalaryWeigh(Double.parseDouble(df.format(salaryWeight)));
-            graphDto.setOtherExpenses(Double.parseDouble(df.format(mis)));
-            graphDto.setOtherExpensesWight(Double.parseDouble(df.format(misWeight)));
-            graphDto.setResources(Double.parseDouble(df.format(resources)));
-            graphDto.setResourcesWeight(Double.parseDouble(df.format(resourcesWeight)));
-            graphDto.setUnassigned(Double.parseDouble(df.format(unassigned)));
-            graphDto.setUnassginedWeight(Double.parseDouble(df.format(unassginedWeight)));
+            graphDto.setFullBudget((long) formatNonNegative(fullBudget));
+            graphDto.setFullWeight(formatNonNegative(fullWeight));
+            graphDto.setExpectedBudget(project.getBudget() != null ?
+                    BigDecimal.valueOf(formatNonNegative(project.getBudget().doubleValue())) : null);
+            graphDto.setProfit(formatNonNegative(profit));
+            graphDto.setProfitWeight(formatNonNegative(profitWeight));
+            graphDto.setSalary(formatNonNegative(salary));
+            graphDto.setSalaryWeigh(formatNonNegative(salaryWeight));
+            graphDto.setOtherExpenses(formatNonNegative(mis));
+            graphDto.setOtherExpensesWight(formatNonNegative(misWeight));
+            graphDto.setResources(formatNonNegative(resources));
+            graphDto.setResourcesWeight(formatNonNegative(resourcesWeight));
+            graphDto.setUnassigned(formatNonNegative(unassigned));
+            graphDto.setUnassginedWeight(formatNonNegative(unassginedWeight));
 
             graphDto.setExpectedBudget(project.getPredictedBudgetForResources());
             graphDto.setBudgetRisk(
                     BigDecimal.valueOf(fullBudget).compareTo(project.getBudget()) < 0 ? "LOW" : "HIGH"
             );
+
+            List<ReleaseVersionDTO> releases  = releaseVersionService.getReleaseVersionsByProjectId(project.getId());
+            LocalDate farthestDeadline = releases.stream()
+                    .flatMap(release -> release.getTasks().stream()) // Stream<TaskDTO>
+                    .map(TaskDTO::getDeadline) // Stream<LocalDate>
+                    .filter(date -> date != null) // skip nulls
+                    .max(Comparator.naturalOrder()) // find the latest date
+                    .orElse(null);
+            LocalDate extendedDeadline = farthestDeadline.plusWeeks(2);
+
+            if (extendedDeadline.isBefore(project.getDeadline())) {
+               graphDto.setDateRisk("LOW");
+            }else if (farthestDeadline.isBefore(project.getDeadline())) {
+                graphDto.setDateRisk("MEDIUM");
+            } else if (extendedDeadline.isAfter(project.getDeadline())) {
+                graphDto.setDateRisk("HIGH");
+            } else {
+                graphDto.setDateRisk("MEDIUM");
+            }
+
+            graphDto.setPredictedDate(String.valueOf(extendedDeadline));
+
 
         }
 

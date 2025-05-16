@@ -8,6 +8,7 @@ import com.project_management.models.enums.ProjectStatus;
 import com.project_management.repositories.ProjectRepository;
 import com.project_management.repositories.ReleaseVersionRepository;
 import com.project_management.security.utils.SecurityUtil;
+import com.project_management.services.ReleaseVersionService;
 import com.project_management.services.TaskService;
 import com.project_management.servicesImpl.TaskCreationFromMLService;
 import lombok.extern.slf4j.Slf4j;
@@ -199,11 +200,11 @@ public class TaskController {
                         .status(HttpStatus.BAD_REQUEST)
                         .body(new ErrorResponse("User stories are required"));
             }
-            ReleaseVersion releaseVersion = releaseVersionRepository.findById(request.getReleaseVersionId()).orElseThrow();
-            Project project = releaseVersion.getProject();
-            if(project.getStatus() != ProjectStatus.ACCEPTED){
-                return new ResponseEntity<>("", HttpStatus.LOCKED);
-            }
+//            ReleaseVersion releaseVersion = releaseVersionRepository.findById(request.getReleaseVersionId()).orElseThrow();
+//            Project project = releaseVersion.getProject();
+//            if(project.getStatus() != ProjectStatus.ACCEPTED){
+//                return new ResponseEntity<>("", HttpStatus.LOCKED);
+//            }
 
             List<TaskDTO> createdTasks = taskCreationFromMLService.createTasksFromStories(request);
             log.info("Successfully created {} tasks from user stories", createdTasks.size());

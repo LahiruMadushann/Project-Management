@@ -13,6 +13,7 @@ import java.util.Optional;
 public interface ClientRepository extends JpaRepository<Client, Long> {
     Integer findUserIdByClientId(Long clientId);
     Client findByUserId(Long userId);
+    List<Client> findAllByProjectId(Long id);
     @Query("SELECT c.projectId FROM Client c WHERE c.userId = :userId")
     List<Integer> findProjectIdsByUserId(Integer userId);
 

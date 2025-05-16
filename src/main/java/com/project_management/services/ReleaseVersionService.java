@@ -1,5 +1,6 @@
 package com.project_management.services;
 
+import com.project_management.dto.CriticalPathResponse;
 import com.project_management.dto.ReleaseVersionDTO;
 import com.project_management.dto.ReleaseVersionDTONew;
 import com.project_management.dto.UserStoryListResponseDto;
@@ -15,4 +16,5 @@ public interface ReleaseVersionService {
     UserStoryListResponseDto getUserStoriesByProjectId();
     List<ReleaseVersionDTO> getReleaseVersionsByProjectId(Long projectId);
     List<ReleaseVersionDTONew> getReleaseVersionsByProjectIdNew(Long projectId);
+    CriticalPathResponse criticalPath(Long id);
 }

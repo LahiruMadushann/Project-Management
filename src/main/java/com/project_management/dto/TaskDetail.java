@@ -16,4 +16,8 @@ public class TaskDetail {
     private String taskName;
     @JsonProperty("priority_level")
     private PriorityLevel priorityLevel;
+    @JsonProperty("start_date")
+    private String startDate;
+    @JsonProperty("end_date")
+    private String endDate;
 }

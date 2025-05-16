@@ -8,7 +8,12 @@ import com.project_management.repositories.ClientRepository;
 import com.project_management.repositories.RoleRepository;
 import com.project_management.repositories.UserRepository;
 import com.project_management.services.ClientService;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,6 +36,9 @@ public class ClientServiceImpl implements ClientService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JavaMailSender mailSender;
 
     @Override
     public ClientDTO createClient(ClientDTO clientDTO) {
@@ -60,6 +68,38 @@ public class ClientServiceImpl implements ClientService {
 
         Client savedClient = clientRepository.save(client);
         clientDTO.setClientId(savedClient.getClientId());
+
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = null;
+        try {
+            helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setTo(clientDTO.getEmail());
+            helper.setSubject("Assigned to a Project");
+            helper.setFrom("devrepublic07@gmail.com");
+
+            String htmlContent = "<html><body>"
+                    + "<div style='font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px;'>"
+                    + "<div style='background: #007BFF; color: white; text-align: center; padding: 15px;" +
+                    " font-size: 20px; font-weight: bold;'>Project Assignment Notification</div>"
+                    + "<div style='background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);'>"
+                    + "<p>Dear <b>" + clientDTO.getUsername() + "</b>,</p>"
+                    + "<p>I am sharing your login credentials for Project Pulse Portal.You can access the project via the portal using the credentials below:</p>"
+                    + "<p>\n</p>"
+                    + "<p><b>Username:</b> " + clientDTO.getUsername() + "</p>"
+                    + "<p><b>Password:</b> " + clientDTO.getPassword() + "</p>"
+                    + "<p>Click the button below to log in and get started:</p>"
+                    + "<p><a href='https://yourportal.com/login' style='display:inline-block;padding:" +
+                    "12px 20px;background:#007BFF;color:#ffffff;text-decoration:none;border-radius:5px;font-size:16px;'>Access Project</a></p>"
+                    + "<p>If you have any issues, feel free to contact support.</p>"
+                    + "<p>Best regards,</p>"
+                    + "<p><b>Project Pulse</b></p>"
+                    + "</div></div></body></html>";
+
+            helper.setText(htmlContent, true);
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException(e);
+        }
         return convertToDTO(clientDTO);
     }
 

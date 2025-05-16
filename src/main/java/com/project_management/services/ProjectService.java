@@ -17,6 +17,7 @@ public interface ProjectService {
     void deleteProject(Long id);
     List<ProjectDetailsDTO> getProjectsAssignedToUser(Long userId);
     EffortCombinedCallResponse saveAdvance(AdvanceDetailsDTO advanceDetailsDTO);
+    List<AdvanceDetails> getAdvance(Long id);
     AdvanceDetails getAdvanceDetailsByProjectId(Long projectId);
     ProjectBudget saveBudget(ProjectBudgetGraphDto dto);
     AdvanceDetails getAdvanceDetailsById(Long id);

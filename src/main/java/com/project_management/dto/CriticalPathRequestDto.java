@@ -6,5 +6,5 @@ import java.util.List;
 
 @Data
 public class CriticalPathRequestDto {
-    private List<TaskDTO> tasks;
+    private  List<ReleaseVersionDTO> tasks;
 }
