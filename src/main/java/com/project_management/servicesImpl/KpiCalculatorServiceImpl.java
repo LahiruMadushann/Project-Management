@@ -2,6 +2,7 @@ package com.project_management.servicesImpl;
 
 import com.project_management.dto.KpiDTO;
 import com.project_management.models.*;
+import com.project_management.models.constant.DomainValue;
 import com.project_management.models.enums.Domain;
 import com.project_management.repositories.EmployeeRepository;
 import com.project_management.repositories.PerfectEmployeeRepository;
@@ -40,7 +41,7 @@ public class KpiCalculatorServiceImpl implements KpiService {
                 .collect(Collectors.toMap(PerfectEmployee::getRoleName, pe -> pe));
 
         return employees.stream()
-                .map(employee -> calculateKpiForEmployee(employee, perfectEmployeeMap))
+                .map(employee -> calculateKpiForEmployeeByDomain(employee, perfectEmployeeMap, domain))
                 .collect(Collectors.toList());
     }
 
@@ -124,6 +125,103 @@ public class KpiCalculatorServiceImpl implements KpiService {
             skillKpi = (calculateDefaultCategoryKpi(employee.getSkills())) * ((skillWeight/totalWeight) * 100);
             educationKpi = (calculateDefaultCategoryKpi(employee.getEducations())) * ((educationWeight/totalWeight) * 100);
             experienceKpi = (calculateDefaultCategoryKpi(employee.getExperiences())) * ((experienceWeight/totalWeight) * 100);
+        }
+
+        double overallKpi = (skillKpi + educationKpi + experienceKpi);
+
+        KpiDTO kpiDTO = new KpiDTO();
+        kpiDTO.setEmployeeId(employee.getEmployeeId());
+        kpiDTO.setEmployeeName(employee.getEmployeeName());
+        kpiDTO.setRoleName(employee.getRoleName());
+        kpiDTO.setRoleCategory(employee.getRoleCategory());
+        kpiDTO.setDomain(employee.getDomain());
+        kpiDTO.setOverallKpi(overallKpi);
+        kpiDTO.setSkillKpi(skillKpi);
+        kpiDTO.setEducationKpi(educationKpi);
+        kpiDTO.setExperienceKpi(experienceKpi);
+
+        return kpiDTO;
+    }
+
+    private KpiDTO calculateKpiForEmployeeByDomain(Employee employee, Map<String, PerfectEmployee> perfectEmployeeMap, Domain domain) {
+        PerfectEmployee perfectEmployee = perfectEmployeeMap.get(employee.getRoleName());
+
+        double skillKpi = 0;
+        double educationKpi = 0;
+        double experienceKpi = 0;
+
+        double skillWeight = 0;
+        double educationWeight = 0;
+        double experienceWeight = 0;
+        double totalWeight = 0;
+
+        if (perfectEmployee != null) {
+            skillWeight = calculateWeight(employee.getSkills(), perfectEmployee.getSkills());
+            educationWeight = calculateWeight(employee.getEducations(), perfectEmployee.getEducations());
+            experienceWeight = calculateWeight(employee.getExperiences(), perfectEmployee.getExperiences());
+            totalWeight = skillWeight + educationWeight + experienceWeight;
+
+            /**
+             * keep experiences that relevant to the project and remove other experiences
+             */
+//            List<EmployeeExperience> filteredExperiences = employee.getExperiences().stream()
+//                    .filter(exp -> Boolean.parseBoolean(exp.getExperienceName()))
+//                    .collect(Collectors.toList());
+
+            if (domain.toString().equals("Health")){
+                skillKpi = (calculateCategoryKpi(employee.getSkills(), perfectEmployee.getSkills())) * ((skillWeight/totalWeight) * 100) * DomainValue.Health;
+//                educationKpi = (calculateCategoryKpi(employee.getEducations(), perfectEmployee.getEducations())) * ((educationWeight/totalWeight) * 100) * DomainValue.Health;
+//                experienceKpi = (calculateCategoryKpi(employee.getExperiences(), perfectEmployee.getExperiences())) * ((experienceWeight/totalWeight) * 100) * DomainValue.Health;
+            } else if (domain.toString().equals("Banking")) {
+                skillKpi = (calculateCategoryKpi(employee.getSkills(), perfectEmployee.getSkills())) * ((skillWeight/totalWeight) * 100) * DomainValue.Banking;
+//                educationKpi = (calculateCategoryKpi(employee.getEducations(), perfectEmployee.getEducations())) * ((educationWeight/totalWeight) * 100) * DomainValue.Banking;
+//                experienceKpi = (calculateCategoryKpi(employee.getExperiences(), perfectEmployee.getExperiences())) * ((experienceWeight/totalWeight) * 100) * DomainValue.Banking;
+            } else if (domain.toString().equals("Education")) {
+                skillKpi = (calculateCategoryKpi(employee.getSkills(), perfectEmployee.getSkills())) * ((skillWeight/totalWeight) * 100) * DomainValue.Finance;
+//                educationKpi = (calculateCategoryKpi(employee.getEducations(), perfectEmployee.getEducations())) * ((educationWeight/totalWeight) * 100) * DomainValue.Finance;
+//                experienceKpi = (calculateCategoryKpi(employee.getExperiences(), perfectEmployee.getExperiences())) * ((experienceWeight/totalWeight) * 100) * DomainValue.Finance;
+            } else if (domain.toString().equals("Ecommerce")) {
+                skillKpi = (calculateCategoryKpi(employee.getSkills(), perfectEmployee.getSkills())) * ((skillWeight/totalWeight) * 100) * DomainValue.Ecommerce;
+//                educationKpi = (calculateCategoryKpi(employee.getEducations(), perfectEmployee.getEducations())) * ((educationWeight/totalWeight) * 100) * DomainValue.Ecommerce;
+//                experienceKpi = (calculateCategoryKpi(employee.getExperiences(), perfectEmployee.getExperiences())) * ((experienceWeight/totalWeight) * 100) * DomainValue.Ecommerce;
+            } else {
+                skillKpi = (calculateCategoryKpi(employee.getSkills(), perfectEmployee.getSkills())) * ((skillWeight/totalWeight) * 100);
+//                educationKpi = (calculateCategoryKpi(employee.getEducations(), perfectEmployee.getEducations())) * ((educationWeight/totalWeight) * 100);
+//                experienceKpi = (calculateCategoryKpi(employee.getExperiences(), perfectEmployee.getExperiences())) * ((experienceWeight/totalWeight) * 100);
+            }
+
+
+
+        } else {
+            // If no perfect employee is found, use default weights and max points
+            skillWeight = calculateDefaultWeight(employee.getSkills());
+            educationWeight = calculateDefaultWeight(employee.getEducations());
+            experienceWeight = calculateDefaultWeight(employee.getExperiences());
+            totalWeight = skillWeight + educationWeight + experienceWeight;
+
+            if (domain.toString().equals("Health")){
+                skillKpi = (calculateDefaultCategoryKpi(employee.getSkills())) * ((skillWeight/totalWeight) * 100) * DomainValue.Health;
+//                educationKpi = (calculateDefaultCategoryKpi(employee.getEducations())) * ((educationWeight/totalWeight) * 100) * DomainValue.Health;
+//                experienceKpi = (calculateDefaultCategoryKpi(employee.getExperiences())) * ((experienceWeight/totalWeight) * 100) * DomainValue.Health;
+            } else if (domain.toString().equals("Banking")) {
+                skillKpi = (calculateDefaultCategoryKpi(employee.getSkills())) * ((skillWeight/totalWeight) * 100) * DomainValue.Banking;
+//                educationKpi = (calculateDefaultCategoryKpi(employee.getEducations())) * ((educationWeight/totalWeight) * 100) * DomainValue.Banking;
+//                experienceKpi = (calculateDefaultCategoryKpi(employee.getExperiences())) * ((experienceWeight/totalWeight) * 100) * DomainValue.Banking;
+            } else if (domain.toString().equals("Education")) {
+                skillKpi = (calculateDefaultCategoryKpi(employee.getSkills())) * ((skillWeight/totalWeight) * 100) * DomainValue.Education;
+//                educationKpi = (calculateDefaultCategoryKpi(employee.getEducations())) * ((educationWeight/totalWeight) * 100) * DomainValue.Education;
+//                experienceKpi = (calculateDefaultCategoryKpi(employee.getExperiences())) * ((experienceWeight/totalWeight) * 100) * DomainValue.Education;
+            } else if (domain.toString().equals("Ecommerce")) {
+                skillKpi = (calculateDefaultCategoryKpi(employee.getSkills())) * ((skillWeight/totalWeight) * 100) * DomainValue.Ecommerce;
+//                educationKpi = (calculateDefaultCategoryKpi(employee.getEducations())) * ((educationWeight/totalWeight) * 100) * DomainValue.Ecommerce;
+//                experienceKpi = (calculateDefaultCategoryKpi(employee.getExperiences())) * ((experienceWeight/totalWeight) * 100) * DomainValue.Ecommerce;
+            } else {
+                skillKpi = (calculateDefaultCategoryKpi(employee.getSkills())) * ((skillWeight/totalWeight) * 100);
+//                educationKpi = (calculateDefaultCategoryKpi(employee.getEducations())) * ((educationWeight/totalWeight) * 100);
+//                experienceKpi = (calculateDefaultCategoryKpi(employee.getExperiences())) * ((experienceWeight/totalWeight) * 100);
+            }
+
+
         }
 
         double overallKpi = (skillKpi + educationKpi + experienceKpi);
